@@ -60,9 +60,10 @@ const ItemDetailScreen = ({ route, navigation }) => {
       // Root Stack에 등록된 ChatRoom으로 이동 - 어떤 탭에서든 접근 가능
       navigation.navigate('ChatRoom', {
         roomId: room.roomId,
+        itemId: itemId,
         itemTitle: item.title,
         currentUserId: TEMP_BUYER_ID,
-        otherUserId: item.sellerId,
+        sellerId: item.sellerId,
       });
     } catch (e) {
       Alert.alert('오류', e.message || '채팅방을 열 수 없습니다. 다시 시도해주세요.');

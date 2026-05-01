@@ -1,5 +1,6 @@
 package com.marketapp.backend.domain.chat.dto;
 
+import com.marketapp.backend.domain.chat.entity.ChatMessageType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -20,4 +21,7 @@ public class ChatMessageRequestDto {
 
     @NotBlank(message = "메시지 내용은 비어있을 수 없습니다.")
     private String message;
+
+    // 메시지 타입 - 클라이언트에서 명시하지 않으면 NORMAL로 처리
+    private ChatMessageType type = ChatMessageType.NORMAL;
 }

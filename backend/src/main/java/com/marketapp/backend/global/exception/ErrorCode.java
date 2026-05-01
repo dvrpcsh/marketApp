@@ -22,6 +22,9 @@ public enum ErrorCode {
     // Chat 도메인
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."),
 
+    // Trade 도메인
+    TRADE_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 완료된 거래입니다."),
+
     // 공통
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "요청 값이 올바르지 않습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");

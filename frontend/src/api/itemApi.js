@@ -10,3 +10,8 @@ export const fetchItemDetail = (itemId) => instance.get(`/api/items/${itemId}`);
 // 매물 등록 - JWT 도입 전까지 sellerId를 쿼리 파라미터로 전달 (추후 토큰에서 자동 추출로 변경 예정)
 export const createItem = (sellerId, itemData) =>
   instance.post(`/api/items?sellerId=${sellerId}`, itemData);
+
+// 거래 완료 처리 - 판매자만 호출 가능 (백엔드에서 sellerId 일치 여부 검증)
+// roomId: 채팅방에 시스템 메시지를 전송하기 위한 ID (null이면 메시지 미전송)
+export const completeTrade = (itemId, sellerId, buyerId, roomId) =>
+  instance.post(`/api/items/${itemId}/complete`, { sellerId, buyerId, roomId });

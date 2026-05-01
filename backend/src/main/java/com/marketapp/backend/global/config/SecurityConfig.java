@@ -29,6 +29,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 회원가입은 인증 없이 접근 허용
                         .requestMatchers(HttpMethod.POST, "/api/users/signup").permitAll()
+                        // 사용자 프로필 조회 - MVP 테스트용 permitAll (JWT 도입 후 본인 인증 추가)
+                        .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
                         // 매물 목록/상세 조회는 비회원도 접근 허용 (시세 확인 목적)
                         .requestMatchers(HttpMethod.GET, "/api/items", "/api/items/**").permitAll()
                         // WebSocket 핸드셰이크 엔드포인트 - HTTP Upgrade 요청이므로 Security 통과 필요
@@ -36,6 +38,8 @@ public class SecurityConfig {
                         .requestMatchers("/ws/**", "/ws-sockjs/**").permitAll()
                         // 채팅 API - JWT 도입 후 인증 필요로 변경 예정
                         .requestMatchers("/api/chats/**").permitAll()
+                        // 거래 완료 API - MVP 테스트용 permitAll, JWT 도입 후 판매자 인증으로 변경
+                        .requestMatchers("/api/items/*/complete").permitAll()
                         // 그 외 모든 요청은 인증 필요 (JWT 도입 후 필터에서 토큰 검증)
                         .anyRequest().authenticated()
                 );

@@ -46,16 +46,20 @@ const ChatListScreen = ({ navigation }) => {
 
   // 채팅방 클릭: Root Stack의 ChatRoom 화면으로 이동
   const handleRoomPress = useCallback((room) => {
+    // ChatRoom 모델에서 receiverId = 판매자(매물 등록자)
+    // senderId = 채팅을 먼저 시작한 구매자
     navigation.navigate('ChatRoom', {
       roomId: room.roomId,
+      itemId: room.itemId,
       itemTitle: `매물 #${room.itemId}`, // 추후 Item API 조회로 실제 매물명 표시 예정
       currentUserId: TEMP_CURRENT_USER_ID,
-      otherUserId: room.senderId === TEMP_CURRENT_USER_ID ? room.receiverId : room.senderId,
+      sellerId: room.receiverId,
     });
   }, [navigation]);
 
   const renderRoom = useCallback(({ item }) => {
     const otherUserId = item.senderId === TEMP_CURRENT_USER_ID ? item.receiverId : item.senderId;
+    const isSeller = item.receiverId === TEMP_CURRENT_USER_ID;
 
     return (
       <TouchableOpacity

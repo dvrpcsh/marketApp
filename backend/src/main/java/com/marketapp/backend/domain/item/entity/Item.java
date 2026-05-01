@@ -59,10 +59,12 @@ public class Item extends BaseEntity {
         this.status = ItemStatus.RESERVED;
     }
 
-    // 거래 완료 처리 - 완료 후 판매자 신뢰 점수/거래 횟수 업데이트는 Service에서 별도 처리
+    // 거래 완료 처리 - 완료 후 판매자/구매자 신뢰 점수 및 거래 횟수 업데이트는 Service에서 처리
+    // COMPLETED → COMPLETED 재시도만 차단: 판매중(FOR_SALE)이나 예약중(RESERVED) 모두 완료 가능
+    // → 판매자가 예약 과정 없이 채팅방에서 바로 거래를 완료하는 실제 사용 패턴 수용
     public void complete() {
-        if (this.status != ItemStatus.RESERVED) {
-            throw new IllegalStateException("예약중인 매물만 완료 처리할 수 있습니다.");
+        if (this.status == ItemStatus.COMPLETED) {
+            throw new IllegalStateException("이미 완료된 거래입니다.");
         }
         this.status = ItemStatus.COMPLETED;
     }
