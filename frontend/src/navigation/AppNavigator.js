@@ -6,6 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 
 import HomeScreen from '../screens/HomeScreen';
 import ItemDetailScreen from '../screens/ItemDetailScreen';
+import LoungeScreen from '../screens/LoungeScreen';
+import PostDetailScreen from '../screens/PostDetailScreen';
+import WritePostScreen from '../screens/WritePostScreen';
 import ChatListScreen from '../screens/ChatListScreen';
 import ChatRoomScreen from '../screens/ChatRoomScreen';
 import MyPageScreen from '../screens/MyPageScreen';
@@ -15,6 +18,7 @@ import { colors, typography } from '../constants/theme';
 const RootStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
+const LoungeStack = createNativeStackNavigator();
 const ChatStack = createNativeStackNavigator();
 const MyPageStack = createNativeStackNavigator();
 
@@ -32,6 +36,41 @@ const HomeStackNavigator = () => (
       options={{ title: '매물 상세', headerBackTitle: '목록' }}
     />
   </HomeStack.Navigator>
+);
+
+// 라운지 탭: 게시글 목록 → 상세 → 작성 스택
+// WritePost는 Modal presentation으로 자연스러운 글쓰기 진입 UX 제공
+const LoungeStackNavigator = () => (
+  <LoungeStack.Navigator>
+    <LoungeStack.Screen
+      name="Lounge"
+      component={LoungeScreen}
+      options={{ headerShown: false }}
+    />
+    <LoungeStack.Screen
+      name="PostDetail"
+      component={PostDetailScreen}
+      options={{
+        title: '게시글',
+        headerBackTitle: '목록',
+        headerTintColor: colors.textPrimary,
+        headerStyle: { backgroundColor: colors.surface },
+        headerTitleStyle: { ...typography.sectionTitle, color: colors.textPrimary },
+      }}
+    />
+    <LoungeStack.Screen
+      name="WritePost"
+      component={WritePostScreen}
+      options={{
+        title: '글쓰기',
+        headerBackTitle: '취소',
+        headerTintColor: colors.textPrimary,
+        headerStyle: { backgroundColor: colors.surface },
+        headerTitleStyle: { ...typography.sectionTitle, color: colors.textPrimary },
+        presentation: 'modal',
+      }}
+    />
+  </LoungeStack.Navigator>
 );
 
 // 채팅 탭: 채팅방 목록
@@ -61,7 +100,9 @@ const MyPageStackNavigator = () => (
   </MyPageStack.Navigator>
 );
 
-// 하단 탭 네비게이터
+// 하단 탭 네비게이터 - 4탭 구성
+// 마켓 | 라운지 | 채팅 | 내 정보
+// 라운지 추가로 거래 외 콘텐츠 소비 경로 확보 → 앱 체류 시간 및 재방문율 향상 목적
 const MainTabs = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
@@ -78,6 +119,7 @@ const MainTabs = () => (
       tabBarIcon: ({ focused, color, size }) => {
         const iconMap = {
           HomeTab:   focused ? 'storefront'          : 'storefront-outline',
+          LoungeTab: focused ? 'chatbubbles'         : 'chatbubbles-outline',
           ChatTab:   focused ? 'chatbubble-ellipses'  : 'chatbubble-ellipses-outline',
           MyPageTab: focused ? 'person'               : 'person-outline',
         };
@@ -86,14 +128,14 @@ const MainTabs = () => (
     })}
   >
     <Tab.Screen name="HomeTab"   component={HomeStackNavigator}   options={{ title: '마켓' }} />
+    <Tab.Screen name="LoungeTab" component={LoungeStackNavigator} options={{ title: '라운지' }} />
     <Tab.Screen name="ChatTab"   component={ChatStackNavigator}   options={{ title: '채팅' }} />
     <Tab.Screen name="MyPageTab" component={MyPageStackNavigator} options={{ title: '내 정보' }} />
   </Tab.Navigator>
 );
 
 // Root Stack: 탭 네비게이터를 감싸는 최상위 스택
-// ChatRoom을 여기에 등록함으로써 홈 탭(ItemDetail)과 채팅 탭(ChatList) 어디서든
-// navigation.navigate('ChatRoom', params) 한 줄로 채팅방 진입 가능
+// ChatRoom을 여기에 등록하여 홈/라운지/채팅 탭 어디서든 채팅방 진입 가능
 const AppNavigator = () => (
   <NavigationContainer>
     <RootStack.Navigator screenOptions={{ headerShown: false }}>

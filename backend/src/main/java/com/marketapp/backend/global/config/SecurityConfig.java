@@ -40,6 +40,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/chats/**").permitAll()
                         // 거래 완료 API - MVP 테스트용 permitAll, JWT 도입 후 판매자 인증으로 변경
                         .requestMatchers("/api/items/*/complete").permitAll()
+                        // 커뮤니티 API - 조회는 비회원 허용, 작성/수정/삭제는 JWT 도입 후 인증 추가 예정
+                        .requestMatchers("/api/posts/**").permitAll()
                         // 그 외 모든 요청은 인증 필요 (JWT 도입 후 필터에서 토큰 검증)
                         .anyRequest().authenticated()
                 );

@@ -25,6 +25,12 @@ public enum ErrorCode {
     // Trade 도메인
     TRADE_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 완료된 거래입니다."),
 
+    // Community 도메인
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 게시글입니다."),
+    POST_AUTHOR_MISMATCH(HttpStatus.FORBIDDEN, "게시글 작성자만 수정/삭제할 수 있습니다."),
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 댓글입니다."),
+    COMMENT_AUTHOR_MISMATCH(HttpStatus.FORBIDDEN, "댓글 작성자만 삭제할 수 있습니다."),
+
     // 공통
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "요청 값이 올바르지 않습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
