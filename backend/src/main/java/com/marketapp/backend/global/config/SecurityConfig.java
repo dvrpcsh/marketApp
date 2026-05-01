@@ -31,6 +31,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/users/signup").permitAll()
                         // 매물 목록/상세 조회는 비회원도 접근 허용 (시세 확인 목적)
                         .requestMatchers(HttpMethod.GET, "/api/items", "/api/items/**").permitAll()
+                        // WebSocket 핸드셰이크 엔드포인트 - HTTP Upgrade 요청이므로 Security 통과 필요
+                        // /ws: React Native 순수 WebSocket / /ws-sockjs: SockJS 폴백 (웹 클라이언트용)
+                        .requestMatchers("/ws/**", "/ws-sockjs/**").permitAll()
+                        // 채팅 API - JWT 도입 후 인증 필요로 변경 예정
+                        .requestMatchers("/api/chats/**").permitAll()
                         // 그 외 모든 요청은 인증 필요 (JWT 도입 후 필터에서 토큰 검증)
                         .anyRequest().authenticated()
                 );

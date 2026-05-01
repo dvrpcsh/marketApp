@@ -18,7 +18,8 @@
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native-stack": "^7.2.0",
     "react-native-screens": "~4.4.0",
-    "react-native-safe-area-context": "~5.2.0"
+    "react-native-safe-area-context": "~5.2.0",
+    "@stomp/stompjs": "^7.0.0"
   },
   "private": true
 }

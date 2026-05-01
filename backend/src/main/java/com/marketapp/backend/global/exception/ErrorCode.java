@@ -19,6 +19,9 @@ public enum ErrorCode {
     ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 매물입니다."),
     ITEM_SELLER_MISMATCH(HttpStatus.FORBIDDEN, "해당 매물에 대한 권한이 없습니다."),
 
+    // Chat 도메인
+    CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."),
+
     // 공통
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "요청 값이 올바르지 않습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");

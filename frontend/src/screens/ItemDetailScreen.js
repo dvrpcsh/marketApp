@@ -1,18 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
   ActivityIndicator,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
 import { fetchItemDetail } from '../api/itemApi';
+import { findOrCreateChatRoom } from '../api/chatApi';
 import { formatPrice } from '../utils/formatPrice';
 import { formatRelativeDate } from '../utils/formatDate';
 import { colors, spacing, typography, borderRadius } from '../constants/theme';
+
+// JWT 도입 후 토큰에서 자동 추출 예정 - 현재는 테스트용 임시 구매자 ID
+const TEMP_BUYER_ID = 1;
 
 // 매물 상세 화면 - 구매 결정에 필요한 모든 정보를 한 화면에서 제공
 // 판매자 신뢰 점수(36.5 기준)를 눈에 띄게 노출하여 마켓앱의 핵심 가치인 '신뢰'를 강조
@@ -21,6 +26,7 @@ const ItemDetailScreen = ({ route, navigation }) => {
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [chatLoading, setChatLoading] = useState(false);
 
   useEffect(() => {
     // 화면 진입 시 itemId로 상세 정보 로드 - seller 정보도 함께 반환됨 (백엔드 JOIN FETCH)
@@ -36,6 +42,34 @@ const ItemDetailScreen = ({ route, navigation }) => {
     };
     load();
   }, [itemId]);
+
+  // "채팅으로 거래하기" 버튼 핸들러
+  // 채팅방 생성(또는 기존 방 조회) → Root Stack의 ChatRoom으로 이동
+  const handleChatPress = useCallback(async () => {
+    if (!item) return;
+
+    // 자기 자신의 매물에는 채팅 불가
+    if (item.sellerId === TEMP_BUYER_ID) {
+      Alert.alert('안내', '내 매물에는 채팅을 시작할 수 없습니다.');
+      return;
+    }
+
+    setChatLoading(true);
+    try {
+      const room = await findOrCreateChatRoom(TEMP_BUYER_ID, item.sellerId, itemId);
+      // Root Stack에 등록된 ChatRoom으로 이동 - 어떤 탭에서든 접근 가능
+      navigation.navigate('ChatRoom', {
+        roomId: room.roomId,
+        itemTitle: item.title,
+        currentUserId: TEMP_BUYER_ID,
+        otherUserId: item.sellerId,
+      });
+    } catch (e) {
+      Alert.alert('오류', e.message || '채팅방을 열 수 없습니다. 다시 시도해주세요.');
+    } finally {
+      setChatLoading(false);
+    }
+  }, [item, itemId, navigation]);
 
   if (loading) {
     return (
@@ -133,7 +167,8 @@ const ItemDetailScreen = ({ route, navigation }) => {
         <Text style={styles.footerPrice}>{formatPrice(item.price)}</Text>
         <Button
           title="채팅으로 거래하기"
-          onPress={() => {/* TODO: 채팅 화면으로 이동 */}}
+          onPress={handleChatPress}
+          loading={chatLoading}
           style={styles.ctaButton}
         />
       </View>
