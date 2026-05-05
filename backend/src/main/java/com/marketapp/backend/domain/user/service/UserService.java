@@ -25,9 +25,10 @@ public class UserService {
     // username과 email 중복 여부를 각각 검증해 사용자가 어떤 항목이 중복인지 알 수 있도록 처리
     @Transactional
     public UserProfileResponseDto signUp(SignUpRequestDto requestDto) {
-        if (!emailVerificationService.isVerified(requestDto.getEmail())) {
-            throw new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED);
-        }
+        // TODO: 이메일 인증 재활성화 시 아래 주석 해제
+        // if (!emailVerificationService.isVerified(requestDto.getEmail())) {
+        //     throw new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED);
+        // }
         if (userRepository.existsByUsername(requestDto.getUsername())) {
             throw new BusinessException(ErrorCode.USERNAME_ALREADY_EXISTS);
         }
@@ -45,9 +46,9 @@ public class UserService {
                 .email(requestDto.getEmail())
                 .build();
 
-        UserProfileResponseDto result = UserProfileResponseDto.from(userRepository.save(user));
-        emailVerificationService.consumeVerification(requestDto.getEmail());
-        return result;
+        // TODO: 이메일 인증 재활성화 시 아래 주석 해제
+        // emailVerificationService.consumeVerification(requestDto.getEmail());
+        return UserProfileResponseDto.from(userRepository.save(user));
     }
 
     public void checkNicknameDuplicate(String nickname) {
