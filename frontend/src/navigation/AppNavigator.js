@@ -13,6 +13,7 @@ import ChatListScreen from '../screens/ChatListScreen';
 import ChatRoomScreen from '../screens/ChatRoomScreen';
 import MyPageScreen from '../screens/MyPageScreen';
 import SignUpScreen from '../screens/SignUpScreen';
+import LoginScreen from '../screens/LoginScreen';
 import { colors, typography } from '../constants/theme';
 
 const RootStack = createNativeStackNavigator();
@@ -96,6 +97,11 @@ const MyPageStackNavigator = () => (
       name="SignUp"
       component={SignUpScreen}
       options={{ title: '회원가입', headerBackTitle: '뒤로' }}
+    />
+    <MyPageStack.Screen
+      name="Login"
+      component={LoginScreen}
+      options={{ title: '로그인', headerBackTitle: '뒤로' }}
     />
   </MyPageStack.Navigator>
 );

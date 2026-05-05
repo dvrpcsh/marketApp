@@ -14,8 +14,13 @@ import Button from '../components/common/Button';
 import { signUp } from '../api/userApi';
 import { colors, spacing, typography } from '../constants/theme';
 
-// 회원가입 화면 - 백엔드 SignUpRequestDto { username, password, nickname, email }에 1:1 대응하는 폼
-// 각 필드의 유효성은 백엔드에서도 검증하지만, UX를 위해 프론트에서 기본 검사를 먼저 수행
+const PASSWORD_RULES = [
+  { id: 'length',  label: '8자 이상',     check: (pw) => pw.length >= 8 },
+  { id: 'letter',  label: '영문 포함',     check: (pw) => /[a-zA-Z]/.test(pw) },
+  { id: 'number',  label: '숫자 포함',     check: (pw) => /[0-9]/.test(pw) },
+  { id: 'special', label: '특수문자 포함', check: (pw) => /[!@#$%^&*(),.?":{}|<>_\-]/.test(pw) },
+];
+
 const SignUpScreen = ({ navigation }) => {
   const [form, setForm] = useState({
     username: '',
@@ -25,21 +30,20 @@ const SignUpScreen = ({ navigation }) => {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
 
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-    // 입력 시작하면 해당 필드 에러 즉시 제거 - 수정 중임을 인식하도록
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: '' }));
-    }
+    if (field === 'password') setPasswordTouched(true);
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }));
   };
 
-  // 서버 전송 전 프론트 기본 유효성 검사
-  // → 네트워크 요청을 줄이고 사용자에게 즉각적인 피드백 제공
+  const isPasswordValid = () => PASSWORD_RULES.every(({ check }) => check(form.password));
+
   const validate = () => {
     const newErrors = {};
     if (form.username.length < 4) newErrors.username = '아이디는 4자 이상이어야 합니다.';
-    if (form.password.length < 8) newErrors.password = '비밀번호는 8자 이상이어야 합니다.';
+    if (!isPasswordValid()) newErrors.password = '비밀번호 조건을 모두 충족해주세요.';
     if (!form.nickname.trim()) newErrors.nickname = '닉네임을 입력해주세요.';
     if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email = '올바른 이메일 형식이 아닙니다.';
     setErrors(newErrors);
@@ -89,10 +93,27 @@ const SignUpScreen = ({ navigation }) => {
             label="비밀번호"
             value={form.password}
             onChangeText={(v) => updateField('password', v)}
-            placeholder="8자 이상"
+            placeholder="영문, 숫자, 특수문자 포함 8자 이상"
             secureTextEntry
-            errorMessage={errors.password}
+            errorMessage={passwordTouched ? undefined : errors.password}
           />
+          {passwordTouched && (
+            <View style={styles.passwordChecklist}>
+              {PASSWORD_RULES.map(({ id, label, check }) => {
+                const passed = check(form.password);
+                return (
+                  <View key={id} style={styles.checkItem}>
+                    <Text style={[styles.checkIcon, passed ? styles.checkPass : styles.checkFail]}>
+                      {passed ? '✓' : '✗'}
+                    </Text>
+                    <Text style={[styles.checkLabel, passed ? styles.checkPass : styles.checkFail]}>
+                      {label}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
           <Input
             label="닉네임"
             value={form.nickname}
@@ -143,6 +164,32 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: spacing.md,
+  },
+  passwordChecklist: {
+    marginTop: -spacing.sm,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.xs,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  checkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  checkIcon: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  checkLabel: {
+    ...typography.caption,
+  },
+  checkPass: {
+    color: colors.success,
+  },
+  checkFail: {
+    color: colors.textDisabled,
   },
 });
 

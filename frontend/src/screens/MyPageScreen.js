@@ -9,27 +9,25 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Button from '../components/common/Button';
-import { fetchUserProfile } from '../api/userApi';
+import { fetchUserProfile, logout } from '../api/userApi';
+import { tokenStorage } from '../utils/tokenStorage';
 import { colors, spacing, typography, borderRadius } from '../constants/theme';
 
-// JWT 도입 후 토큰에서 자동 추출 예정 - 현재는 테스트용 임시 사용자 ID
-const TEMP_USER_ID = 1;
-
-// 내 정보 화면
-// useFocusEffect: 거래 완료 후 채팅방에서 이 탭으로 돌아올 때 자동으로 신뢰 점수를 재조회
-// → 별도 상태 관리 없이도 항상 최신 점수가 표시됨
 const MyPageScreen = ({ navigation }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 탭에 포커스될 때마다 프로필 재조회
-  // 거래 완료 직후 이 탭을 누르면 바로 반영된 신뢰 점수 확인 가능
   useFocusEffect(
     useCallback(() => {
       const loadProfile = async () => {
         setLoading(true);
         try {
-          const data = await fetchUserProfile(TEMP_USER_ID);
+          const userId = await tokenStorage.getUserId();
+          if (!userId) {
+            setProfile(null);
+            return;
+          }
+          const data = await fetchUserProfile(userId);
           setProfile(data);
         } catch (e) {
           setProfile(null);
@@ -40,6 +38,14 @@ const MyPageScreen = ({ navigation }) => {
       loadProfile();
     }, [])
   );
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      setProfile(null);
+    }
+  };
 
   // 신뢰 점수 색상: 36.5 기준 이상이면 초록, 미만이면 주황
   const getScoreColor = (score) =>
@@ -84,7 +90,7 @@ const MyPageScreen = ({ navigation }) => {
             <Button
               title="로그인"
               variant="secondary"
-              onPress={() => {/* TODO: 로그인 화면 */}}
+              onPress={() => navigation.navigate('Login')}
               style={styles.button}
             />
           </View>
@@ -188,6 +194,10 @@ const MyPageScreen = ({ navigation }) => {
               <Text style={styles.infoValue}>{profile.provider}</Text>
             </View>
           </View>
+        </View>
+
+        <View style={styles.logoutSection}>
+          <Button title="로그아웃" variant="secondary" onPress={handleLogout} />
         </View>
 
       </ScrollView>
@@ -401,6 +411,10 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.border,
     marginHorizontal: spacing.md,
+  },
+  logoutSection: {
+    padding: spacing.md,
+    marginTop: 8,
   },
 });
 
