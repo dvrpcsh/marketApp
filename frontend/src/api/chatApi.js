@@ -1,14 +1,14 @@
 import apiInstance from './instance';
 
 // 채팅방 생성 또는 기존 방 가져오기
-// 동일한 senderId + receiverId + itemId 조합이면 서버에서 기존 방 반환
-export const findOrCreateChatRoom = async (senderId, receiverId, itemId) => {
-  return apiInstance.post('/api/chats/rooms', { senderId, receiverId, itemId });
+// senderId는 서버가 JWT에서 추출하므로 요청 바디에서 제거
+export const findOrCreateChatRoom = async (receiverId, itemId) => {
+  return apiInstance.post('/api/chats/rooms', { receiverId, itemId });
 };
 
-// 특정 사용자가 참여 중인 채팅방 목록 조회
-export const fetchMyChatRooms = async (userId) => {
-  return apiInstance.get('/api/chats/rooms', { params: { userId } });
+// 내 채팅방 목록 조회 - userId는 서버가 JWT에서 추출하므로 파라미터 제거
+export const fetchMyChatRooms = async () => {
+  return apiInstance.get('/api/chats/rooms');
 };
 
 // 채팅방 입장 시 이전 대화 내역 로드

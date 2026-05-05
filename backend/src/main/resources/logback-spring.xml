@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!--
+    JWT 토큰 마스킹 커스텀 컨버터
+    %maskedMsg를 패턴에 사용하면 모든 로그 메시지에서 Bearer eyJ... 형식 JWT가 자동 마스킹
+    -->
+    <conversionRule conversionWord="maskedMsg"
+                    converterClass="com.marketapp.backend.global.security.log.MaskedTokenConverter"/>
+
+    <!-- ── 콘솔 어펜더 (로컬/개발 환경) ──────────────────────────────────── -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{40} - %maskedMsg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ── 파일 어펜더 (운영 환경) ──────────────────────────────────────── -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/marketapp.log</file>
+        <!-- SizeAndTimeBasedRollingPolicy: 날짜 + 파일 크기 기준 롤링 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/marketapp.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <!-- 최대 30일 보관, 전체 3GB 초과 시 오래된 파일 자동 삭제 -->
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{40} - %maskedMsg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ── 로컬 개발 환경 ────────────────────────────────────────────────── -->
+    <springProfile name="local">
+        <!-- 비즈니스 로직은 DEBUG까지, SQL 바인딩 파라미터도 확인 -->
+        <logger name="com.marketapp" level="DEBUG"/>
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+        <logger name="org.hibernate.orm.jdbc.bind" level="TRACE"/>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- ── 운영 환경 ─────────────────────────────────────────────────────── -->
+    <!--
+    [운영 로그 전략]
+    - 루트를 WARN으로 제한: 프레임워크 INFO/DEBUG 차단으로 로그 노이즈 최소화
+    - com.marketapp만 INFO: 거래 완료, 로그인 성공/실패, WebSocket 연결 등 비즈니스 이벤트 기록
+    - SQL 로그 완전 차단: 성능 보호 + 쿼리 구조 노출 방지
+    - 일별 롤링 파일: ELK/CloudWatch 수집 또는 직접 분석 가능
+    -->
+    <springProfile name="prod">
+        <logger name="com.marketapp" level="INFO"/>
+        <logger name="org.springframework" level="WARN"/>
+        <logger name="org.hibernate" level="WARN"/>
+        <root level="WARN">
+            <appender-ref ref="FILE"/>
+        </root>
+    </springProfile>
+
+</configuration>

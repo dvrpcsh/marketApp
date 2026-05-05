@@ -31,8 +31,16 @@ public enum ErrorCode {
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 댓글입니다."),
     COMMENT_AUTHOR_MISMATCH(HttpStatus.FORBIDDEN, "댓글 작성자만 삭제할 수 있습니다."),
 
+    // Auth 도메인
+    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 Refresh Token입니다. 다시 로그인해주세요."),
+
     // 공통
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "요청 값이 올바르지 않습니다."),
+    // DB 유니크 제약(좋아요 중복 등) 위반 시 사용 - 상세 원인은 서버 로그에서 확인
+    DATA_INTEGRITY_VIOLATION(HttpStatus.CONFLICT, "이미 처리된 요청이거나 데이터 중복입니다."),
+    // @Version 기반 낙관적 잠금 충돌 - 동시에 같은 리소스를 변경하려는 시도
+    CONCURRENT_UPDATE_CONFLICT(HttpStatus.CONFLICT, "다른 요청과 동시에 처리되어 충돌이 발생했습니다. 잠시 후 다시 시도해주세요."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 
     private final HttpStatus httpStatus;

@@ -1,17 +1,16 @@
 import instance from './instance';
 
-// 판매중인 전체 매물 목록 조회
-// HomeScreen 진입 시 호출 - 비회원도 접근 가능한 공개 API
+// 판매중인 전체 매물 목록 조회 - 비회원도 접근 가능한 공개 API
 export const fetchItems = () => instance.get('/api/items');
 
-// 매물 상세 조회 - ItemDetailScreen에서 itemId로 상세 정보 + 판매자 신뢰 점수를 한 번에 가져옴
+// 매물 상세 조회
 export const fetchItemDetail = (itemId) => instance.get(`/api/items/${itemId}`);
 
-// 매물 등록 - JWT 도입 전까지 sellerId를 쿼리 파라미터로 전달 (추후 토큰에서 자동 추출로 변경 예정)
-export const createItem = (sellerId, itemData) =>
-  instance.post(`/api/items?sellerId=${sellerId}`, itemData);
+// 매물 등록 - sellerId는 서버가 JWT에서 추출하므로 쿼리 파라미터 제거
+export const createItem = (itemData) => instance.post('/api/items', itemData);
 
-// 거래 완료 처리 - 판매자만 호출 가능 (백엔드에서 sellerId 일치 여부 검증)
-// roomId: 채팅방에 시스템 메시지를 전송하기 위한 ID (null이면 메시지 미전송)
-export const completeTrade = (itemId, sellerId, buyerId, roomId) =>
-  instance.post(`/api/items/${itemId}/complete`, { sellerId, buyerId, roomId });
+// 거래 완료 처리
+// sellerId는 서버가 JWT에서 추출하므로 요청 바디에서 제거
+// 기존: (itemId, sellerId, buyerId, roomId) → 변경: (itemId, buyerId, roomId)
+export const completeTrade = (itemId, buyerId, roomId) =>
+  instance.post(`/api/items/${itemId}/complete`, { buyerId, roomId });

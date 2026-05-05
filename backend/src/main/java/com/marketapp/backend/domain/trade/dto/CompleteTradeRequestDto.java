@@ -5,20 +5,19 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 // 거래 완료 요청 DTO
-// sellerId 검증: 오직 판매자 본인만 거래를 완료할 수 있도록 백엔드에서 검증
-// JWT 도입 후: sellerId는 @AuthenticationPrincipal에서 자동 추출 → 이 필드 제거 예정
+//
+// [sellerId 제거 이유]
+// 기존에는 클라이언트가 sellerId를 요청 바디에 담아 전송했으나,
+// 이는 구매자가 타인의 userId를 sellerId로 위조하여 권한을 사칭할 수 있는 취약점이었다.
+// JWT 도입 후 sellerId는 @AuthenticationPrincipal에서 서버가 직접 추출하므로
+// 이 DTO에서 완전히 제거하여 클라이언트 위조 가능성을 원천 차단한다.
 @Getter
 @NoArgsConstructor
 public class CompleteTradeRequestDto {
 
-    // 판매자 권한 검증용 - JWT 도입 후 토큰에서 자동 추출로 변경 예정
-    @NotNull(message = "sellerId는 필수입니다.")
-    private Long sellerId;
-
     @NotNull(message = "buyerId는 필수입니다.")
     private Long buyerId;
 
-    // 거래 완료 시스템 메시지를 채팅방에 전송하기 위한 채팅방 ID
-    // null이면 시스템 메시지를 전송하지 않음
+    // 거래 완료 시스템 메시지를 채팅방에 전송하기 위한 채팅방 ID (선택값)
     private Long roomId;
 }

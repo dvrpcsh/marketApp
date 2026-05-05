@@ -19,6 +19,17 @@ public class Item extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // 낙관적 잠금(Optimistic Locking)을 위한 버전 필드
+    //
+    // [이 필드가 동시성 문제를 해결하는 이유]
+    // 두 요청이 동시에 같은 Item을 COMPLETED로 바꾸려 할 때:
+    // - 요청 A, B 모두 version=1인 레코드를 읽음
+    // - A가 먼저 커밋: version이 2로 증가
+    // - B가 UPDATE 시도: WHERE id=? AND version=1 → 일치하는 행 없음 → JPA가 예외 발생
+    // 이중 거래 완료와 신뢰 점수 이중 지급을 DB 레벨에서 차단한다.
+    @Version
+    private Long version;
+
     // 판매자 참조 - LAZY 로딩으로 매물 조회 시 불필요한 User 쿼리 방지
     // 명시적으로 필요한 경우에만 JOIN FETCH로 함께 조회
     @ManyToOne(fetch = FetchType.LAZY)

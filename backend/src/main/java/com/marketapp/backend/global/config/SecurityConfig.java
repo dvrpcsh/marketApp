@@ -1,5 +1,7 @@
 package com.marketapp.backend.global.config;
 
+import com.marketapp.backend.global.security.jwt.JwtAuthenticationFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -10,41 +12,51 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-// MVP 단계 Spring Security 설정
-// Stateless(JWT) 구조를 미리 잡아두고, JWT 필터는 추후 여기에 체인으로 추가
-// 인증이 필요 없는 공개 API는 명시적으로 permitAll() 처리
+// Spring Security 필터 체인 설정
+//
+// [전략: 최소 권한 원칙 (Principle of Least Privilege)]
+// MVP 단계에서 개발 편의를 위해 열어뒀던 permitAll() 범위를 최소화한다.
+// 명시적으로 허용한 경로 외에는 모두 JWT 인증을 강제하여,
+// 새로운 API가 추가되어도 기본적으로 인증이 필요한 안전한 상태를 유지한다.
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    // JwtAuthenticationFilter: UsernamePasswordAuthenticationFilter 앞에 위치
+    // 모든 요청에서 Bearer 토큰을 추출·검증하여 SecurityContext에 인증 정보를 설정한다
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // REST API 서버이므로 CSRF 비활성화 (세션 미사용)
+                // REST API 서버이므로 CSRF 비활성화 (세션 쿠키 미사용, Bearer Token 방식)
                 .csrf(AbstractHttpConfigurer::disable)
-                // JWT 기반 Stateless 인증 - 서버가 세션을 관리하지 않음
+                // JWT 기반 Stateless - 서버가 세션을 생성·유지하지 않음
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 회원가입은 인증 없이 접근 허용
-                        .requestMatchers(HttpMethod.POST, "/api/users/signup").permitAll()
-                        // 사용자 프로필 조회 - MVP 테스트용 permitAll (JWT 도입 후 본인 인증 추가)
-                        .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
-                        // 매물 목록/상세 조회는 비회원도 접근 허용 (시세 확인 목적)
+                        // ── 인증 불필요 (공개 엔드포인트) ──────────────────────────────
+                        // 회원가입·로그인·토큰 재발급은 인증 전 단계이므로 허용
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/users/signup",
+                                "/api/auth/login",
+                                "/api/auth/refresh").permitAll()
+                        // 매물 조회는 비회원도 시세 확인을 위해 허용
                         .requestMatchers(HttpMethod.GET, "/api/items", "/api/items/**").permitAll()
-                        // WebSocket 핸드셰이크 엔드포인트 - HTTP Upgrade 요청이므로 Security 통과 필요
-                        // /ws: React Native 순수 WebSocket / /ws-sockjs: SockJS 폴백 (웹 클라이언트용)
+                        // 커뮤니티 조회는 비회원도 허용 (쓰기·수정·삭제는 아래에서 인증 강제)
+                        .requestMatchers(HttpMethod.GET, "/api/posts", "/api/posts/**").permitAll()
+                        // WebSocket 핸드셰이크(HTTP Upgrade)는 이 필터를 통과해야 하므로 허용
+                        // 실제 WebSocket 연결 후 인증은 StompAuthChannelInterceptor에서 처리
                         .requestMatchers("/ws/**", "/ws-sockjs/**").permitAll()
-                        // 채팅 API - JWT 도입 후 인증 필요로 변경 예정
-                        .requestMatchers("/api/chats/**").permitAll()
-                        // 거래 완료 API - MVP 테스트용 permitAll, JWT 도입 후 판매자 인증으로 변경
-                        .requestMatchers("/api/items/*/complete").permitAll()
-                        // 커뮤니티 API - 조회는 비회원 허용, 작성/수정/삭제는 JWT 도입 후 인증 추가 예정
-                        .requestMatchers("/api/posts/**").permitAll()
-                        // 그 외 모든 요청은 인증 필요 (JWT 도입 후 필터에서 토큰 검증)
+                        // ── 인증 필요 (그 외 모든 요청) ─────────────────────────────────
+                        // 매물 등록·거래 완료, 채팅, 게시글 쓰기·수정·삭제, 로그아웃 등
                         .anyRequest().authenticated()
-                );
+                )
+                // JWT 필터를 Spring Security 기본 인증 필터 앞에 삽입
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

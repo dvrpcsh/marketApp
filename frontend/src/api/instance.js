@@ -1,7 +1,6 @@
 import axios from 'axios';
+import { tokenStorage } from '../utils/tokenStorage';
 
-// 백엔드 서버 주소 - 환경 변수로 관리하여 로컬/개발/운영 환경 전환을 코드 수정 없이 처리
-// Android 에뮬레이터: 10.0.2.2 = 호스트 PC의 localhost를 가리키는 특수 주소
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8080';
 
 const instance = axios.create({
@@ -10,25 +9,95 @@ const instance = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// 응답 인터셉터: 백엔드 공통 응답 구조 { success, message, data }를 자동으로 언래핑
-// → 각 API 호출부에서 response.data.data 처럼 중첩 접근하지 않고 바로 데이터 사용 가능
+// ── 토큰 재발급 중복 요청 방지 상태 ──────────────────────────────────────────
+// 동시에 여러 요청이 401을 받았을 때, refresh를 한 번만 호출하고
+// 나머지는 완료될 때까지 대기하도록 하는 큐 패턴
+let isRefreshing = false;
+let refreshWaiters = []; // (newAccessToken) => void 콜백 목록
+
+const notifyRefreshComplete = (newToken) => {
+  refreshWaiters.forEach((cb) => cb(newToken));
+  refreshWaiters = [];
+};
+
+const waitForRefresh = () =>
+  new Promise((resolve) => {
+    refreshWaiters.push(resolve);
+  });
+
+// ── 요청 인터셉터: 모든 요청에 Access Token 자동 주입 ────────────────────────
+// @RequestParam Long userId 방식을 완전히 제거하고,
+// 서버는 Authorization 헤더의 JWT에서만 사용자를 식별한다.
+instance.interceptors.request.use(
+  async (config) => {
+    const accessToken = await tokenStorage.getAccessToken();
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
+
+// ── 응답 인터셉터 ─────────────────────────────────────────────────────────────
 instance.interceptors.response.use(
+  // 성공 응답: 백엔드 공통 구조 { success, message, data } 언래핑
   (response) => {
     const { success, message, data } = response.data;
-
-    if (success) {
-      // 성공: 실제 페이로드만 반환
-      return data;
-    }
-
-    // success: false - 서버가 비즈니스 오류를 정상 HTTP 상태로 응답한 경우 (예: 아이디 중복)
+    if (success) return data;
     return Promise.reject(new Error(message || '요청 처리 중 오류가 발생했습니다.'));
   },
-  (error) => {
-    // 네트워크 단절 또는 HTTP 4xx/5xx - 서버 메시지 있으면 그대로 전달, 없으면 기본 안내
+
+  // 에러 응답: 401(토큰 만료) 시 Refresh Token으로 재발급 후 원본 요청 재시도
+  async (error) => {
+    const originalRequest = error.config;
+
+    // 401 + 재시도 플래그 없음 + refresh 엔드포인트 자체는 재시도 제외
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes('/api/auth/refresh')
+    ) {
+      // 이미 refresh 진행 중이면 완료를 기다렸다가 원본 요청 재시도
+      if (isRefreshing) {
+        const newToken = await waitForRefresh();
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return instance(originalRequest);
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const refreshToken = await tokenStorage.getRefreshToken();
+        if (!refreshToken) throw new Error('refresh token 없음');
+
+        // Refresh Token으로 새 토큰 쌍 요청 (instance 대신 axios 직접 사용하여 인터셉터 루프 방지)
+        const res = await axios.post(`${BASE_URL}/api/auth/refresh`, { refreshToken });
+        const { accessToken: newAccess, refreshToken: newRefresh } = res.data.data;
+
+        // 새 토큰 저장 및 대기 중인 요청들에게 통보
+        await tokenStorage.updateTokens(newAccess, newRefresh);
+        notifyRefreshComplete(newAccess);
+
+        // 원본 요청 재시도
+        originalRequest.headers.Authorization = `Bearer ${newAccess}`;
+        return instance(originalRequest);
+      } catch {
+        // Refresh 실패 = 세션 완전 만료 → 저장된 인증 정보 삭제
+        await tokenStorage.clearAll();
+        notifyRefreshComplete(null);
+        return Promise.reject(new Error('세션이 만료되었습니다. 다시 로그인해주세요.'));
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    // 그 외 에러: 서버 메시지 있으면 그대로, 없으면 기본 안내
     const serverMessage = error.response?.data?.message;
-    const userMessage = serverMessage || '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.';
-    return Promise.reject(new Error(userMessage));
+    return Promise.reject(
+      new Error(serverMessage || '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.'),
+    );
   },
 );
 
