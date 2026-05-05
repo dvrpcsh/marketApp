@@ -14,8 +14,8 @@ import Button from '../components/common/Button';
 import { login } from '../api/userApi';
 import { colors, spacing, typography } from '../constants/theme';
 
-const LoginScreen = ({ navigation }) => {
-  const [form, setForm] = useState({ username: '', password: '' });
+const LoginScreen = ({ navigation, route }) => {
+  const [form, setForm] = useState({ username: route.params?.username ?? '', password: '' });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -39,7 +39,10 @@ const LoginScreen = ({ navigation }) => {
       await login(form.username, form.password);
       navigation.goBack();
     } catch (e) {
-      Alert.alert('로그인 실패', e.message);
+      const message = e.message?.includes('아이디') || e.message?.includes('비밀번호')
+        ? e.message
+        : '아이디 또는 비밀번호가 일치하지 않습니다.';
+      Alert.alert('로그인 실패', message);
     } finally {
       setLoading(false);
     }

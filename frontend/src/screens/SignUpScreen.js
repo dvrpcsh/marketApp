@@ -173,8 +173,8 @@ const SignUpScreen = ({ navigation }) => {
     setLoading(true);
     try {
       await signUp(form);
-      Alert.alert('가입 완료', '마켓앱에 오신 것을 환영합니다!', [
-        { text: '확인', onPress: () => navigation.goBack() },
+      Alert.alert('가입 완료', '마켓앱에 오신 것을 환영합니다!\n가입한 아이디로 로그인해주세요.', [
+        { text: '로그인하기', onPress: () => navigation.replace('Login', { username: form.username }) },
       ]);
     } catch (e) {
       Alert.alert('가입 실패', e.message);
