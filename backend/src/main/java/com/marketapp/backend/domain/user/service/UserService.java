@@ -1,5 +1,6 @@
 package com.marketapp.backend.domain.user.service;
 
+import com.marketapp.backend.domain.auth.service.EmailVerificationService;
 import com.marketapp.backend.domain.user.dto.SignUpRequestDto;
 import com.marketapp.backend.domain.user.dto.UserProfileResponseDto;
 import com.marketapp.backend.domain.user.entity.User;
@@ -18,13 +19,20 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailVerificationService emailVerificationService;
 
     // 일반(LOCAL) 회원가입
     // username과 email 중복 여부를 각각 검증해 사용자가 어떤 항목이 중복인지 알 수 있도록 처리
     @Transactional
     public UserProfileResponseDto signUp(SignUpRequestDto requestDto) {
+        if (!emailVerificationService.isVerified(requestDto.getEmail())) {
+            throw new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED);
+        }
         if (userRepository.existsByUsername(requestDto.getUsername())) {
             throw new BusinessException(ErrorCode.USERNAME_ALREADY_EXISTS);
+        }
+        if (userRepository.existsByNickname(requestDto.getNickname())) {
+            throw new BusinessException(ErrorCode.NICKNAME_ALREADY_EXISTS);
         }
         if (userRepository.existsByEmail(requestDto.getEmail())) {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
@@ -32,13 +40,26 @@ public class UserService {
 
         User user = User.builder()
                 .username(requestDto.getUsername())
-                // 평문 비밀번호 저장 금지 - BCrypt 해시 처리 후 저장
                 .password(passwordEncoder.encode(requestDto.getPassword()))
                 .nickname(requestDto.getNickname())
                 .email(requestDto.getEmail())
                 .build();
 
-        return UserProfileResponseDto.from(userRepository.save(user));
+        UserProfileResponseDto result = UserProfileResponseDto.from(userRepository.save(user));
+        emailVerificationService.consumeVerification(requestDto.getEmail());
+        return result;
+    }
+
+    public void checkNicknameDuplicate(String nickname) {
+        if (userRepository.existsByNickname(nickname)) {
+            throw new BusinessException(ErrorCode.NICKNAME_ALREADY_EXISTS);
+        }
+    }
+
+    public void checkEmailDuplicate(String email) {
+        if (userRepository.existsByEmail(email)) {
+            throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        }
     }
 
     // 사용자 프로필 단건 조회

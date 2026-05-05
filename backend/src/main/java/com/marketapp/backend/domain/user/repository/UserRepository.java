@@ -14,5 +14,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // 회원가입 전 중복 여부만 확인하는 경우 - findBy 대신 existsBy 사용으로 불필요한 데이터 조회 방지
     boolean existsByUsername(String username);
 
+    boolean existsByNickname(String nickname);
+
     boolean existsByEmail(String email);
 }

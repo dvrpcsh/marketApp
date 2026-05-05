@@ -10,6 +10,7 @@ import lombok.*;
 @Table(name = "users",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = "username"),
+                @UniqueConstraint(columnNames = "nickname"),
                 @UniqueConstraint(columnNames = "email")
         })
 @Getter

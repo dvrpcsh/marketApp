@@ -43,7 +43,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST,
                                 "/api/users/signup",
                                 "/api/auth/login",
-                                "/api/auth/refresh").permitAll()
+                                "/api/auth/refresh",
+                                "/api/auth/email/send",
+                                "/api/auth/email/verify").permitAll()
+                        // 닉네임·이메일 중복 확인은 회원가입 전 단계이므로 인증 불필요
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/users/check-nickname",
+                                "/api/users/check-email").permitAll()
                         // 매물 조회는 비회원도 시세 확인을 위해 허용
                         .requestMatchers(HttpMethod.GET, "/api/items", "/api/items/**").permitAll()
                         // 커뮤니티 조회는 비회원도 허용 (쓰기·수정·삭제는 아래에서 인증 강제)

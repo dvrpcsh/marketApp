@@ -28,8 +28,21 @@ public class UserController {
                 .body(ResponseDto.success("회원가입이 완료되었습니다.", response));
     }
 
+    // 닉네임 중복 확인 - 회원가입 폼 실시간 검사용 (인증 불필요)
+    @GetMapping("/check-nickname")
+    public ResponseEntity<ResponseDto<Void>> checkNickname(@RequestParam String value) {
+        userService.checkNicknameDuplicate(value);
+        return ResponseEntity.ok(ResponseDto.success("사용 가능한 닉네임입니다.", null));
+    }
+
+    // 이메일 중복 확인 - 회원가입 폼 실시간 검사용 (인증 불필요)
+    @GetMapping("/check-email")
+    public ResponseEntity<ResponseDto<Void>> checkEmail(@RequestParam String value) {
+        userService.checkEmailDuplicate(value);
+        return ResponseEntity.ok(ResponseDto.success("사용 가능한 이메일입니다.", null));
+    }
+
     // 사용자 프로필 조회
-    // 추후 JWT 필터 적용 후 본인 또는 공개 프로필만 조회 가능하도록 제한 예정
     @GetMapping("/{userId}")
     public ResponseEntity<ResponseDto<UserProfileResponseDto>> getUserProfile(
             @PathVariable Long userId) {

@@ -22,5 +22,21 @@ export const logout = async () => {
   }
 };
 
+// 이메일 인증번호 발송
+export const sendEmailCode = (email) =>
+  instance.post('/api/auth/email/send', { email });
+
+// 이메일 인증번호 확인
+export const verifyEmailCode = (email, code) =>
+  instance.post('/api/auth/email/verify', { email, code });
+
+// 닉네임 중복 확인 - 사용 가능하면 resolve, 중복이면 reject (에러 메시지 포함)
+export const checkNicknameDuplicate = (nickname) =>
+  instance.get('/api/users/check-nickname', { params: { value: nickname } });
+
+// 이메일 중복 확인 - 사용 가능하면 resolve, 중복이면 reject (에러 메시지 포함)
+export const checkEmailDuplicate = (email) =>
+  instance.get('/api/users/check-email', { params: { value: email } });
+
 // 사용자 프로필 조회 - MyPageScreen에서 본인 정보 표시 시 호출
 export const fetchUserProfile = (userId) => instance.get(`/api/users/${userId}`);
