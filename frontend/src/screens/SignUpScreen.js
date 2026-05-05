@@ -36,16 +36,22 @@ const SignUpScreen = ({ navigation }) => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
-  // 비밀번호 체크리스트
+  // 비밀번호 체크리스트 — 입력 시작 또는 제출 시도 시 표시
   const [passwordTouched, setPasswordTouched] = useState(false);
 
   // 닉네임 중복 확인
-  const [nicknameStatus, setNicknameStatus] = useState('idle'); // idle|checking|available|taken
+  const [nicknameStatus, setNicknameStatus] = useState('idle');
   const nicknameTimer = useRef(null);
 
   // 이메일 중복 확인
   const [emailStatus, setEmailStatus] = useState('idle');
   const emailDupTimer = useRef(null);
+
+  // 각 필드 포커스용 ref
+  const usernameRef = useRef(null);
+  const passwordRef = useRef(null);
+  const nicknameRef = useRef(null);
+  const emailRef   = useRef(null);
 
   // TODO: 이메일 인증 재활성화 시 아래 상태 주석 해제
   // const [emailFocused, setEmailFocused] = useState(false);
@@ -94,35 +100,70 @@ const SignUpScreen = ({ navigation }) => {
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }));
     if (field === 'nickname' || field === 'email') triggerDuplicateCheck(field, value);
     // TODO: 이메일 인증 재활성화 시 아래 주석 해제
-    // if (field === 'email') {
-    //   setEmailVerified(false);
-    //   setCodeSent(false);
-    //   setInputCode('');
-    //   setCodeError('');
-    // }
+    // if (field === 'email') { setEmailVerified(false); setCodeSent(false); ... }
   };
 
-  // TODO: 이메일 인증 재활성화 시 아래 함수들 주석 해제
-  // const handleSendCode = async () => { ... };
-  // const handleVerifyCode = async () => { ... };
-
-  // ── 폼 유효성 검사 ────────────────────────────────────────────────────────
-
-  const isPasswordValid = () => PASSWORD_RULES.every(({ check }) => check(form.password));
+  // ── 폼 유효성 검사 + 알림 + 포커스 ──────────────────────────────────────────
 
   const validate = () => {
+    const failedPasswordRules = PASSWORD_RULES.filter(({ check }) => !check(form.password));
+
     const newErrors = {};
-    if (form.username.length < 4) newErrors.username = '아이디는 4자 이상이어야 합니다.';
-    if (!isPasswordValid()) newErrors.password = '비밀번호 조건을 모두 충족해주세요.';
-    if (!form.nickname.trim()) newErrors.nickname = '닉네임을 입력해주세요.';
-    if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email = '올바른 이메일 형식이 아닙니다.';
+    if (form.username.length < 4)          newErrors.username = '아이디는 4자 이상이어야 합니다.';
+    if (failedPasswordRules.length > 0)    newErrors.password = '비밀번호 조건을 모두 충족해주세요.';
+    if (!form.nickname.trim())             newErrors.nickname = '닉네임을 입력해주세요.';
+    if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email    = '올바른 이메일 형식이 아닙니다.';
     // TODO: 이메일 인증 재활성화 시 아래 주석 해제
     // else if (!emailVerified) newErrors.email = '이메일 인증이 필요합니다.';
+
+    const nickDupFail  = nicknameStatus === 'taken' || nicknameStatus === 'checking';
+    const emailDupFail = emailStatus   === 'taken' || emailStatus   === 'checking';
+
     setErrors(newErrors);
-    const dupValid =
-      nicknameStatus !== 'taken' && nicknameStatus !== 'checking' &&
-      emailStatus !== 'taken' && emailStatus !== 'checking';
-    return Object.keys(newErrors).length === 0 && dupValid;
+
+    // 하나라도 실패하면 알림 + 포커스
+    const hasError = Object.keys(newErrors).length > 0 || nickDupFail || emailDupFail;
+    if (hasError) {
+      // 비밀번호 체크리스트 강제 표시
+      setPasswordTouched(true);
+
+      // 알림 메시지 조립
+      const lines = [];
+      if (newErrors.username) lines.push(`• 아이디: ${newErrors.username}`);
+      if (newErrors.password) {
+        const failed = failedPasswordRules.map((r) => r.label).join(', ');
+        lines.push(`• 비밀번호: ${failed} 조건 미충족`);
+      }
+      if (nickDupFail) {
+        lines.push(
+          nicknameStatus === 'taken'
+            ? '• 닉네임: 이미 사용 중인 닉네임입니다.'
+            : '• 닉네임: 중복 확인 중입니다. 잠시 후 다시 시도해주세요.',
+        );
+      } else if (newErrors.nickname) {
+        lines.push(`• 닉네임: ${newErrors.nickname}`);
+      }
+      if (emailDupFail) {
+        lines.push(
+          emailStatus === 'taken'
+            ? '• 이메일: 이미 사용 중인 이메일입니다.'
+            : '• 이메일: 중복 확인 중입니다. 잠시 후 다시 시도해주세요.',
+        );
+      } else if (newErrors.email) {
+        lines.push(`• 이메일: ${newErrors.email}`);
+      }
+
+      Alert.alert('입력 정보를 확인해주세요', lines.join('\n'));
+
+      // 첫 번째 오류 필드로 포커스 이동
+      if (newErrors.username)                          usernameRef.current?.focus();
+      else if (newErrors.password)                     passwordRef.current?.focus();
+      else if (newErrors.nickname || nickDupFail)      nicknameRef.current?.focus();
+      else if (newErrors.email    || emailDupFail)     emailRef.current?.focus();
+
+      return false;
+    }
+    return true;
   };
 
   // ── 회원가입 제출 ─────────────────────────────────────────────────────────
@@ -156,6 +197,7 @@ const SignUpScreen = ({ navigation }) => {
 
           {/* 아이디 */}
           <Input
+            ref={usernameRef}
             label="아이디"
             value={form.username}
             onChangeText={(v) => updateField('username', v)}
@@ -165,6 +207,7 @@ const SignUpScreen = ({ navigation }) => {
 
           {/* 비밀번호 */}
           <Input
+            ref={passwordRef}
             label="비밀번호"
             value={form.password}
             onChangeText={(v) => updateField('password', v)}
@@ -172,6 +215,7 @@ const SignUpScreen = ({ navigation }) => {
             secureTextEntry
             errorMessage={passwordTouched ? undefined : errors.password}
           />
+          {/* 비밀번호 실시간 체크리스트 — 미충족 항목은 빨간색으로 표시 */}
           {passwordTouched && (
             <View style={styles.passwordChecklist}>
               {PASSWORD_RULES.map(({ id, label, check }) => {
@@ -192,6 +236,7 @@ const SignUpScreen = ({ navigation }) => {
 
           {/* 닉네임 */}
           <Input
+            ref={nicknameRef}
             label="닉네임"
             value={form.nickname}
             onChangeText={(v) => updateField('nickname', v)}
@@ -208,6 +253,7 @@ const SignUpScreen = ({ navigation }) => {
 
           {/* 이메일 */}
           <Input
+            ref={emailRef}
             label="이메일"
             value={form.email}
             onChangeText={(v) => updateField('email', v)}
@@ -224,20 +270,8 @@ const SignUpScreen = ({ navigation }) => {
           )}
 
           {/* TODO: 이메일 인증 재활성화 시 아래 블록 주석 해제
-          {codeSent && !emailVerified && (
-            <View style={styles.codeSection}>
-              <Text style={styles.codeHint}>인증번호를 5분 내에 입력해주세요.</Text>
-              <View style={styles.codeRow}>
-                <TextInput ... />
-                <TouchableOpacity onPress={handleVerifyCode}>...</TouchableOpacity>
-              </View>
-            </View>
-          )}
-          {emailVerified && (
-            <View style={styles.verifiedRow}>
-              <Text style={styles.verifiedText}>✓ 이메일 인증이 완료되었습니다.</Text>
-            </View>
-          )}
+          {codeSent && !emailVerified && ( ... )}
+          {emailVerified && ( ... )}
           */}
 
           <Button
@@ -300,7 +334,7 @@ const styles = StyleSheet.create({
   checkIcon: { fontSize: 13, fontWeight: '700' },
   checkLabel: { ...typography.caption },
   checkPass: { color: colors.success },
-  checkFail: { color: colors.textDisabled },
+  checkFail: { color: colors.error },   // 미충족 항목 → 빨간색
 
   // 중복 확인 상태
   dupRow: {
