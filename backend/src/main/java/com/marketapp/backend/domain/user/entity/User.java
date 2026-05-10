@@ -45,6 +45,16 @@ public class User extends BaseEntity {
     @Builder.Default
     private boolean phoneVerified = false;
 
+    // 본인 인증 완료 여부 (실명 확인) - 사기 거래 방지의 핵심 조건
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean identityVerified = false;
+
+    // 계좌 인증 완료 여부 - 안전 결제 및 환불 처리 활성화 조건
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean bankVerified = false;
+
     // 신뢰 점수: 36.5 기본값 → 거래 성공 시 상승, 분쟁/취소 시 하락하는 동적 지표
     // 캐릭터 인증 시스템과 연동하여 인증 완료 시 추가 점수 부여 예정
     @Column(nullable = false)

@@ -27,6 +27,11 @@ public class CreateItemRequestDto {
     @Min(value = 10000, message = "최소 10,000골드 이상이어야 합니다.")
     private Long quantity;
 
+    // 1만 골드당 판매 단가 (원) - 구매자가 서버 간 시세를 비교하는 핵심 데이터
+    @NotNull(message = "1만 골드당 가격은 필수입니다.")
+    @Min(value = 1, message = "가격은 1원 이상이어야 합니다.")
+    private Integer pricePerUnit;
+
     @NotBlank(message = "캐릭터명은 필수입니다.")
     @Size(max = 50, message = "캐릭터명은 최대 50자입니다.")
     private String characterName;

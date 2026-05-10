@@ -100,24 +100,28 @@ const WriteItemScreen = ({ navigation }) => {
   const [selectedItemType, setSelectedItemType] = useState(null);
   // quantityMan: 사용자가 입력하는 "만 골드" 단위 수량 (실제 골드 = quantityMan * 10,000)
   const [quantityMan, setQuantityMan]           = useState('');
+  // pricePerUnit: 1만 골드당 가격 (원) - 구매자가 시세를 비교하는 핵심 데이터
+  const [pricePerUnit, setPricePerUnit]         = useState('');
   const [characterName, setCharacterName]       = useState('');
   const [title, setTitle]                       = useState('');
   const [description, setDescription]           = useState('');
   const [loading, setLoading]                   = useState(false);
 
-  const quantityManNum = parseInt(quantityMan, 10) || 0;
-  const isQuantityValid = quantityManNum >= 1;
+  const quantityManNum   = parseInt(quantityMan, 10)  || 0;
+  const pricePerUnitNum  = parseInt(pricePerUnit, 10) || 0;
+  const isQuantityValid  = quantityManNum >= 1;
+  const isPriceValid     = pricePerUnitNum >= 1;
   const isValid =
     selectedGame &&
     selectedServer &&
     selectedItemType &&
     isQuantityValid &&
+    isPriceValid &&
     characterName.trim().length > 0 &&
     title.trim().length > 0;
 
-  const handleQuantityChange = (text) => {
-    setQuantityMan(text.replace(/[^0-9]/g, ''));
-  };
+  const handleQuantityChange    = (text) => setQuantityMan(text.replace(/[^0-9]/g, ''));
+  const handlePriceChange       = (text) => setPricePerUnit(text.replace(/[^0-9]/g, ''));
 
   const handleSubmit = useCallback(async () => {
     if (!isValid) return;
@@ -128,6 +132,7 @@ const WriteItemScreen = ({ navigation }) => {
         serverName:    selectedServer,
         category:      selectedItemType,
         quantity:      quantityManNum * 10000, // 서버는 골드 단위로 받음
+        pricePerUnit:  pricePerUnitNum,
         characterName: characterName.trim(),
         title:         title.trim(),
         description:   description.trim() || undefined,
@@ -221,6 +226,38 @@ const WriteItemScreen = ({ navigation }) => {
               <Ionicons name="information-circle-outline" size={14} color={colors.info} />
               <Text style={styles.hintText}>
                 판매 수량은 <Text style={styles.hintBold}>1만 단위</Text>로만 등록 가능합니다.
+              </Text>
+            </View>
+          </View>
+
+          {/* ── 1만G당 가격 ── */}
+          <View style={styles.card}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="pricetag-outline" size={18} color={colors.primary} />
+              <Text style={styles.sectionLabel}>1만 골드당 가격</Text>
+            </View>
+
+            <View style={styles.quantityRow}>
+              <TextInput
+                style={[styles.input, styles.quantityInput]}
+                value={pricePerUnit}
+                onChangeText={handlePriceChange}
+                placeholder="0"
+                placeholderTextColor={colors.textDisabled}
+                keyboardType="numeric"
+              />
+              <Text style={styles.quantityUnitLabel}>원 / 1만G</Text>
+              {pricePerUnitNum > 0 && quantityManNum > 0 && (
+                <Text style={styles.quantityConverted}>
+                  총 {((pricePerUnitNum * quantityManNum)).toLocaleString()}원
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.hintRow}>
+              <Ionicons name="information-circle-outline" size={14} color={colors.info} />
+              <Text style={styles.hintText}>
+                1만 골드를 판매하는 가격(원)을 입력해주세요.
               </Text>
             </View>
           </View>

@@ -46,6 +46,7 @@ public class ItemService {
                 .serverName(requestDto.getServerName())
                 .category(requestDto.getCategory())
                 .quantity(requestDto.getQuantity())
+                .pricePerUnit(requestDto.getPricePerUnit())
                 .characterName(requestDto.getCharacterName())
                 .title(requestDto.getTitle())
                 .description(requestDto.getDescription())

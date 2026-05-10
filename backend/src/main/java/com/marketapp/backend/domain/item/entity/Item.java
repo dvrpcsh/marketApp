@@ -59,7 +59,12 @@ public class Item extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String title;
 
-    // KRW 가격 - 추후 실물화폐 결제 기능 구현 시 사용, 현재는 0으로 유지
+    // 1만 골드당 판매 단가 (원) - 서버별 시세 비교의 핵심 데이터
+    // ex) pricePerUnit=1300 → 1만 골드에 1,300원, 50만 골드면 65,000원
+    @Column(nullable = false)
+    private int pricePerUnit;
+
+    // KRW 총가격 필드 - 추후 실물화폐 결제 기능 구현 시 사용, 현재는 0으로 유지
     @Builder.Default
     @Column(nullable = false)
     private int price = 0;
