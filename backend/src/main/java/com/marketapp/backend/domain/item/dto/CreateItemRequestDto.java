@@ -27,6 +27,10 @@ public class CreateItemRequestDto {
     @Min(value = 10000, message = "최소 10,000골드 이상이어야 합니다.")
     private Long quantity;
 
+    // 최소 구매 수량 (골드) - 선택 항목, 입력 시 10,000 단위 및 판매 수량 이하 조건 적용
+    @Min(value = 10000, message = "최소 구매 수량은 10,000골드 이상이어야 합니다.")
+    private Long minQuantity;
+
     // 1만 골드당 판매 단가 (원) - 구매자가 서버 간 시세를 비교하는 핵심 데이터
     @NotNull(message = "1만 골드당 가격은 필수입니다.")
     @Min(value = 1, message = "가격은 1원 이상이어야 합니다.")

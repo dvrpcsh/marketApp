@@ -21,6 +21,9 @@ public class ItemResponseDto {
     private ItemCategory category;
     private long quantity;
 
+    // 최소 구매 수량 (골드) - null이면 제한 없음
+    private Long minQuantity;
+
     // 1만 골드당 단가 (원) - 서버별 시세 비교의 핵심
     private int pricePerUnit;
 
@@ -49,6 +52,7 @@ public class ItemResponseDto {
                 .serverName(item.getServerName())
                 .category(item.getCategory())
                 .quantity(item.getQuantity())
+                .minQuantity(item.getMinQuantity())
                 .pricePerUnit(item.getPricePerUnit())
                 .characterName(item.getCharacterName())
                 .title(item.getTitle())

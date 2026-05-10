@@ -52,6 +52,11 @@ public class Item extends BaseEntity {
     @Column(nullable = false)
     private long quantity;
 
+    // 최소 구매 수량 (골드) - null이면 제한 없음
+    // 판매자가 소량 거래를 방지하고 원하는 최소 단위를 지정할 수 있는 선택 항목
+    @Column
+    private Long minQuantity;
+
     // 물품을 전달할 캐릭터명 - 거래 사고 방지를 위한 필수 확인 항목
     @Column(nullable = false, length = 50)
     private String characterName;

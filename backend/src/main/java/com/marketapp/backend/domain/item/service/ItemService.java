@@ -37,6 +37,14 @@ public class ItemService {
             throw new BusinessException(ErrorCode.INVALID_GOLD_UNIT);
         }
 
+        // 최소 구매 수량: 입력된 경우 10,000 단위 & 총 판매 수량 이하 조건 검증
+        Long minQuantity = requestDto.getMinQuantity();
+        if (minQuantity != null) {
+            if (minQuantity % 10000 != 0 || minQuantity > requestDto.getQuantity()) {
+                throw new BusinessException(ErrorCode.INVALID_MIN_QUANTITY);
+            }
+        }
+
         User seller = userRepository.findById(sellerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -46,6 +54,7 @@ public class ItemService {
                 .serverName(requestDto.getServerName())
                 .category(requestDto.getCategory())
                 .quantity(requestDto.getQuantity())
+                .minQuantity(minQuantity)
                 .pricePerUnit(requestDto.getPricePerUnit())
                 .characterName(requestDto.getCharacterName())
                 .title(requestDto.getTitle())

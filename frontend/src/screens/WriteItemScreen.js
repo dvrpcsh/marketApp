@@ -100,6 +100,8 @@ const WriteItemScreen = ({ navigation }) => {
   const [selectedItemType, setSelectedItemType] = useState(null);
   // quantityMan: 사용자가 입력하는 "만 골드" 단위 수량 (실제 골드 = quantityMan * 10,000)
   const [quantityMan, setQuantityMan]           = useState('');
+  // minQuantityMan: 최소 구매 수량 (만 골드 단위) - 선택 항목
+  const [minQuantityMan, setMinQuantityMan]     = useState('');
   // pricePerUnit: 1만 골드당 가격 (원) - 구매자가 시세를 비교하는 핵심 데이터
   const [pricePerUnit, setPricePerUnit]         = useState('');
   const [characterName, setCharacterName]       = useState('');
@@ -107,20 +109,28 @@ const WriteItemScreen = ({ navigation }) => {
   const [description, setDescription]           = useState('');
   const [loading, setLoading]                   = useState(false);
 
-  const quantityManNum   = parseInt(quantityMan, 10)  || 0;
-  const pricePerUnitNum  = parseInt(pricePerUnit, 10) || 0;
-  const isQuantityValid  = quantityManNum >= 1;
-  const isPriceValid     = pricePerUnitNum >= 1;
+  const quantityManNum    = parseInt(quantityMan, 10)    || 0;
+  const minQuantityManNum = parseInt(minQuantityMan, 10) || 0;
+  const pricePerUnitNum   = parseInt(pricePerUnit, 10)   || 0;
+
+  const isQuantityValid    = quantityManNum >= 1;
+  const isPriceValid       = pricePerUnitNum >= 1;
+  // 최소 수량: 미입력이면 통과, 입력 시 1 이상 & 총 수량 이하
+  const isMinQuantityValid = minQuantityManNum === 0 ||
+    (minQuantityManNum >= 1 && minQuantityManNum <= quantityManNum);
+
   const isValid =
     selectedGame &&
     selectedServer &&
     selectedItemType &&
     isQuantityValid &&
     isPriceValid &&
+    isMinQuantityValid &&
     characterName.trim().length > 0 &&
     title.trim().length > 0;
 
   const handleQuantityChange    = (text) => setQuantityMan(text.replace(/[^0-9]/g, ''));
+  const handleMinQuantityChange = (text) => setMinQuantityMan(text.replace(/[^0-9]/g, ''));
   const handlePriceChange       = (text) => setPricePerUnit(text.replace(/[^0-9]/g, ''));
 
   const handleSubmit = useCallback(async () => {
@@ -131,7 +141,8 @@ const WriteItemScreen = ({ navigation }) => {
         gameName:      selectedGame,
         serverName:    selectedServer,
         category:      selectedItemType,
-        quantity:      quantityManNum * 10000, // 서버는 골드 단위로 받음
+        quantity:      quantityManNum * 10000,
+        ...(minQuantityManNum > 0 && { minQuantity: minQuantityManNum * 10000 }),
         pricePerUnit:  pricePerUnitNum,
         characterName: characterName.trim(),
         title:         title.trim(),
@@ -145,7 +156,8 @@ const WriteItemScreen = ({ navigation }) => {
     } finally {
       setLoading(false);
     }
-  }, [isValid, selectedGame, selectedServer, selectedItemType, quantityManNum,
+  }, [isValid, selectedGame, selectedServer, selectedItemType,
+      quantityManNum, minQuantityManNum, pricePerUnitNum,
       characterName, title, description, navigation]);
 
   return (
@@ -226,6 +238,51 @@ const WriteItemScreen = ({ navigation }) => {
               <Ionicons name="information-circle-outline" size={14} color={colors.info} />
               <Text style={styles.hintText}>
                 판매 수량은 <Text style={styles.hintBold}>1만 단위</Text>로만 등록 가능합니다.
+              </Text>
+            </View>
+          </View>
+
+          {/* ── 최소 판매 골드 (선택) ── */}
+          <View style={styles.card}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="trending-up-outline" size={18} color={colors.primary} />
+              <Text style={styles.sectionLabel}>최소 판매 골드</Text>
+              <View style={styles.optionalBadge}>
+                <Text style={styles.optionalBadgeText}>선택</Text>
+              </View>
+            </View>
+
+            <View style={styles.quantityRow}>
+              <TextInput
+                style={[
+                  styles.input,
+                  styles.quantityInput,
+                  minQuantityMan.length > 0 && !isMinQuantityValid && styles.inputError,
+                ]}
+                value={minQuantityMan}
+                onChangeText={handleMinQuantityChange}
+                placeholder="0"
+                placeholderTextColor={colors.textDisabled}
+                keyboardType="numeric"
+              />
+              <Text style={styles.quantityUnitLabel}>만 골드 이상</Text>
+              {minQuantityManNum > 0 && pricePerUnitNum > 0 && (
+                <Text style={styles.quantityConverted}>
+                  {(pricePerUnitNum * minQuantityManNum).toLocaleString()}원~
+                </Text>
+              )}
+            </View>
+
+            {minQuantityMan.length > 0 && !isMinQuantityValid && (
+              <Text style={styles.errorText}>
+                최소 수량은 1만 골드 이상, 총 판매 수량({quantityManNum}만G) 이하여야 합니다.
+              </Text>
+            )}
+
+            <View style={styles.hintRow}>
+              <Ionicons name="information-circle-outline" size={14} color={colors.info} />
+              <Text style={styles.hintText}>
+                비워두면 제한 없이 거래 가능합니다.
               </Text>
             </View>
           </View>
@@ -376,6 +433,22 @@ const styles = StyleSheet.create({
     ...typography.sectionTitle,
     fontSize: 15,
     color: colors.textPrimary,
+  },
+  optionalBadge: {
+    marginLeft: spacing.xs,
+    backgroundColor: colors.border,
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  optionalBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  errorText: {
+    ...typography.caption,
+    color: colors.error,
   },
 
   // 게임·물품종류 wrap 버튼

@@ -145,6 +145,16 @@ const ItemCard = React.memo(({ item, onPress }) => {
               ? `${((item.pricePerUnit * item.quantity) / 10000).toLocaleString('ko-KR')}원`
               : '-'}
           </Text>
+          {/* 최소 판매 골드: 등록된 경우에만 예상금액 아래에 표시
+              구매자가 거래 가능 여부를 목록에서 즉시 판단할 수 있도록 노출 */}
+          {!!item.minQuantity && (
+            <Text style={styles.minQuantityText}>
+              최소 {(item.minQuantity / 10000).toLocaleString()}만G
+              {item.pricePerUnit
+                ? ` · ${((item.pricePerUnit * item.minQuantity) / 10000).toLocaleString()}원`
+                : ''}
+            </Text>
+          )}
         </View>
       </View>
 
@@ -302,6 +312,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: colors.secondary,    // 네이비로 총금액 표시 (신뢰/안정감)
+  },
+  minQuantityText: {
+    fontSize: 9,
+    fontWeight: '500',
+    color: colors.primary,
+    marginTop: 1,
   },
 
   // 판매자 행

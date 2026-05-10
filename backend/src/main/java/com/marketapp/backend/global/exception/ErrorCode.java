@@ -20,6 +20,7 @@ public enum ErrorCode {
     ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 매물입니다."),
     ITEM_SELLER_MISMATCH(HttpStatus.FORBIDDEN, "해당 매물에 대한 권한이 없습니다."),
     INVALID_GOLD_UNIT(HttpStatus.BAD_REQUEST, "판매 수량은 10,000골드 단위로 입력해야 합니다."),
+    INVALID_MIN_QUANTITY(HttpStatus.BAD_REQUEST, "최소 구매 수량은 10,000골드 단위이며 총 판매 수량 이하여야 합니다."),
 
     // Chat 도메인
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."),
