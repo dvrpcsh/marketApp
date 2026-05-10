@@ -16,6 +16,7 @@ import MyPageScreen from '../screens/MyPageScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import LoginScreen from '../screens/LoginScreen';
 import { colors, typography } from '../constants/theme';
+import { navigationRef } from '../utils/navigationRef';
 
 const RootStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -24,121 +25,73 @@ const LoungeStack = createNativeStackNavigator();
 const ChatStack = createNativeStackNavigator();
 const MyPageStack = createNativeStackNavigator();
 
-// 홈 탭: 매물 목록 → 상세 흐름
+const headerCommonOptions = {
+  headerTintColor: colors.textPrimary,
+  headerStyle: { backgroundColor: colors.surface },
+  headerTitleStyle: { ...typography.sectionTitle, color: colors.textPrimary },
+};
+
+// 홈 탭: 매물 목록 → 상세 → 매물 등록
 const HomeStackNavigator = () => (
   <HomeStack.Navigator>
-    <HomeStack.Screen
-      name="Home"
-      component={HomeScreen}
-      options={{ headerShown: false }}
-    />
+    <HomeStack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
     <HomeStack.Screen
       name="ItemDetail"
       component={ItemDetailScreen}
-      options={{ title: '매물 상세', headerBackTitle: '목록' }}
+      options={{ title: '매물 상세', headerBackTitle: '목록', ...headerCommonOptions }}
     />
     <HomeStack.Screen
       name="WriteItem"
       component={WriteItemScreen}
-      options={{
-        title: '판매 매물 등록',
-        headerBackTitle: '취소',
-        headerTintColor: colors.textPrimary,
-        headerStyle: { backgroundColor: colors.surface },
-        headerTitleStyle: { ...typography.sectionTitle, color: colors.textPrimary },
-        presentation: 'modal',
-      }}
+      options={{ title: '판매 매물 등록', headerBackTitle: '취소', ...headerCommonOptions, presentation: 'modal' }}
     />
   </HomeStack.Navigator>
 );
 
-// 라운지 탭: 게시글 목록 → 상세 → 작성 스택
-// WritePost는 Modal presentation으로 자연스러운 글쓰기 진입 UX 제공
+// 라운지 탭: 게시글 목록 → 상세 → 글쓰기
 const LoungeStackNavigator = () => (
   <LoungeStack.Navigator>
-    <LoungeStack.Screen
-      name="Lounge"
-      component={LoungeScreen}
-      options={{ headerShown: false }}
-    />
+    <LoungeStack.Screen name="Lounge" component={LoungeScreen} options={{ headerShown: false }} />
     <LoungeStack.Screen
       name="PostDetail"
       component={PostDetailScreen}
-      options={{
-        title: '게시글',
-        headerBackTitle: '목록',
-        headerTintColor: colors.textPrimary,
-        headerStyle: { backgroundColor: colors.surface },
-        headerTitleStyle: { ...typography.sectionTitle, color: colors.textPrimary },
-      }}
+      options={{ title: '게시글', headerBackTitle: '목록', ...headerCommonOptions }}
     />
     <LoungeStack.Screen
       name="WritePost"
       component={WritePostScreen}
-      options={{
-        title: '글쓰기',
-        headerBackTitle: '취소',
-        headerTintColor: colors.textPrimary,
-        headerStyle: { backgroundColor: colors.surface },
-        headerTitleStyle: { ...typography.sectionTitle, color: colors.textPrimary },
-        presentation: 'modal',
-      }}
+      options={{ title: '글쓰기', headerBackTitle: '취소', ...headerCommonOptions, presentation: 'modal' }}
     />
   </LoungeStack.Navigator>
 );
 
-// 채팅 탭: 채팅방 목록
+// 채팅 탭
 const ChatStackNavigator = () => (
   <ChatStack.Navigator>
-    <ChatStack.Screen
-      name="ChatList"
-      component={ChatListScreen}
-      options={{ headerShown: false }}
-    />
+    <ChatStack.Screen name="ChatList" component={ChatListScreen} options={{ headerShown: false }} />
   </ChatStack.Navigator>
 );
 
-// 내 정보 탭: 회원가입 등 인증 관련 화면 포함
+// 내 정보 탭 - Login/SignUp은 RootStack으로 이동했으므로 MyPage만 관리
 const MyPageStackNavigator = () => (
   <MyPageStack.Navigator>
-    <MyPageStack.Screen
-      name="MyPage"
-      component={MyPageScreen}
-      options={{ headerShown: false }}
-    />
-    <MyPageStack.Screen
-      name="SignUp"
-      component={SignUpScreen}
-      options={{ title: '회원가입', headerBackTitle: '뒤로' }}
-    />
-    <MyPageStack.Screen
-      name="Login"
-      component={LoginScreen}
-      options={{ title: '로그인', headerBackTitle: '뒤로' }}
-    />
+    <MyPageStack.Screen name="MyPage" component={MyPageScreen} options={{ headerShown: false }} />
   </MyPageStack.Navigator>
 );
 
-// 하단 탭 네비게이터 - 4탭 구성
-// 마켓 | 라운지 | 채팅 | 내 정보
-// 라운지 추가로 거래 외 콘텐츠 소비 경로 확보 → 앱 체류 시간 및 재방문율 향상 목적
+// 하단 탭 네비게이터 - 마켓 | 라운지 | 채팅 | 내 정보
 const MainTabs = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
       headerShown: false,
       tabBarActiveTintColor: colors.primary,
       tabBarInactiveTintColor: colors.textDisabled,
-      tabBarStyle: {
-        borderTopColor: colors.border,
-        backgroundColor: colors.surface,
-      },
-      tabBarLabelStyle: {
-        ...typography.caption,
-      },
+      tabBarStyle: { borderTopColor: colors.border, backgroundColor: colors.surface },
+      tabBarLabelStyle: { ...typography.caption },
       tabBarIcon: ({ focused, color, size }) => {
         const iconMap = {
-          HomeTab:   focused ? 'storefront'          : 'storefront-outline',
-          LoungeTab: focused ? 'chatbubbles'         : 'chatbubbles-outline',
+          HomeTab:   focused ? 'storefront'           : 'storefront-outline',
+          LoungeTab: focused ? 'chatbubbles'          : 'chatbubbles-outline',
           ChatTab:   focused ? 'chatbubble-ellipses'  : 'chatbubble-ellipses-outline',
           MyPageTab: focused ? 'person'               : 'person-outline',
         };
@@ -154,22 +107,34 @@ const MainTabs = () => (
 );
 
 // Root Stack: 탭 네비게이터를 감싸는 최상위 스택
-// ChatRoom을 여기에 등록하여 홈/라운지/채팅 탭 어디서든 채팅방 진입 가능
+//
+// [Login/SignUp을 RootStack에 배치한 이유]
+// 인증 가드(useAuth)는 마켓·라운지·채팅 탭 어느 곳에서도 발동될 수 있다.
+// 각 탭 스택에 Login을 중복 등록하면 라우트 이름이 충돌하고 관리가 어려워진다.
+// RootStack에 한 번만 등록하면 navigation.navigate('Login') 한 줄로
+// 어느 화면에서도 로그인 모달을 띄울 수 있다.
 const AppNavigator = () => (
-  <NavigationContainer>
+  <NavigationContainer ref={navigationRef}>
     <RootStack.Navigator screenOptions={{ headerShown: false }}>
       <RootStack.Screen name="Main" component={MainTabs} />
+
+      {/* 채팅방 - 어느 탭에서든 진입 가능 */}
       <RootStack.Screen
         name="ChatRoom"
         component={ChatRoomScreen}
-        options={{
-          headerShown: true,
-          headerBackTitle: '뒤로',
-          headerTintColor: colors.textPrimary,
-          headerStyle: { backgroundColor: colors.surface },
-          headerTitleStyle: { ...typography.sectionTitle, color: colors.textPrimary },
-          presentation: 'card',
-        }}
+        options={{ headerShown: true, headerBackTitle: '뒤로', ...headerCommonOptions, presentation: 'card' }}
+      />
+
+      {/* 인증 화면 - 전역 모달로 어느 탭에서든 navigate('Login') 호출 가능 */}
+      <RootStack.Screen
+        name="Login"
+        component={LoginScreen}
+        options={{ headerShown: true, title: '로그인', headerBackTitle: '뒤로', ...headerCommonOptions, presentation: 'modal' }}
+      />
+      <RootStack.Screen
+        name="SignUp"
+        component={SignUpScreen}
+        options={{ headerShown: true, title: '회원가입', headerBackTitle: '뒤로', ...headerCommonOptions, presentation: 'modal' }}
       />
     </RootStack.Navigator>
   </NavigationContainer>

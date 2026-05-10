@@ -12,12 +12,17 @@ import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
 import { fetchItemDetail } from '../api/itemApi';
 import { findOrCreateChatRoom } from '../api/chatApi';
-import { formatPrice } from '../utils/formatPrice';
+import { tokenStorage } from '../utils/tokenStorage';
 import { formatRelativeDate } from '../utils/formatDate';
 import { colors, spacing, typography, borderRadius } from '../constants/theme';
 
-// JWT 도입 후 토큰에서 자동 추출 예정 - 현재는 테스트용 임시 구매자 ID
-const TEMP_BUYER_ID = 1;
+// 골드 수량을 "X만 골드" 형식으로 표시
+const formatQuantity = (quantity) => {
+  if (!quantity) return '-';
+  return `${(quantity / 10000).toLocaleString('ko-KR')}만 골드`;
+};
+
+const CATEGORY_LABEL = { CURRENCY: '게임재화', ITEM: '아이템', ETC: '기타' };
 
 // 매물 상세 화면 - 구매 결정에 필요한 모든 정보를 한 화면에서 제공
 // 판매자 신뢰 점수(36.5 기준)를 눈에 띄게 노출하여 마켓앱의 핵심 가치인 '신뢰'를 강조
@@ -29,7 +34,6 @@ const ItemDetailScreen = ({ route, navigation }) => {
   const [chatLoading, setChatLoading] = useState(false);
 
   useEffect(() => {
-    // 화면 진입 시 itemId로 상세 정보 로드 - seller 정보도 함께 반환됨 (백엔드 JOIN FETCH)
     const load = async () => {
       try {
         const data = await fetchItemDetail(itemId);
@@ -44,25 +48,42 @@ const ItemDetailScreen = ({ route, navigation }) => {
   }, [itemId]);
 
   // "채팅으로 거래하기" 버튼 핸들러
-  // 채팅방 생성(또는 기존 방 조회) → Root Stack의 ChatRoom으로 이동
+  // 1단계: 로그인 여부 확인 → 미로그인 시 로그인 화면으로 유도
+  // 2단계: 내 매물 여부 확인 → 자기 매물에는 채팅 불가
+  // 3단계: 채팅방 생성(또는 기존 방 조회) → ChatRoom으로 이동
   const handleChatPress = useCallback(async () => {
     if (!item) return;
 
-    // 자기 자신의 매물에는 채팅 불가
-    if (item.sellerId === TEMP_BUYER_ID) {
+    // 1단계: 로그인 여부 확인
+    const token = await tokenStorage.getAccessToken();
+    if (!token) {
+      Alert.alert(
+        '로그인이 필요합니다',
+        '마켓 서비스를 이용하시려면 로그인이 필요합니다.',
+        [
+          { text: '취소', style: 'cancel' },
+          { text: '로그인하기', onPress: () => navigation.navigate('Login') },
+        ],
+      );
+      return;
+    }
+
+    // 2단계: 내 매물 여부 확인 (JWT에서 추출한 userId와 비교)
+    const currentUserId = await tokenStorage.getUserId();
+    if (item.sellerId === currentUserId) {
       Alert.alert('안내', '내 매물에는 채팅을 시작할 수 없습니다.');
       return;
     }
 
+    // 3단계: 채팅방 생성 또는 조회
     setChatLoading(true);
     try {
-      const room = await findOrCreateChatRoom(TEMP_BUYER_ID, item.sellerId, itemId);
-      // Root Stack에 등록된 ChatRoom으로 이동 - 어떤 탭에서든 접근 가능
+      const room = await findOrCreateChatRoom(currentUserId, item.sellerId, itemId);
       navigation.navigate('ChatRoom', {
         roomId: room.roomId,
         itemId: itemId,
         itemTitle: item.title,
-        currentUserId: TEMP_BUYER_ID,
+        currentUserId: currentUserId,
         sellerId: item.sellerId,
       });
     } catch (e) {
@@ -88,15 +109,7 @@ const ItemDetailScreen = ({ route, navigation }) => {
     );
   }
 
-  // 카테고리 한국어 매핑 - 백엔드 Enum값을 사용자 친화적 레이블로 변환
-  const categoryLabel = {
-    CHARACTER: '캐릭터',
-    ITEM: '아이템/장비',
-    CURRENCY: '게임 재화',
-    ACCOUNT: '계정',
-    BOOSTING: '육성 서비스',
-    OTHER: '기타',
-  }[item.category] || item.category;
+  const categoryLabel = CATEGORY_LABEL[item.category] || item.category;
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -117,8 +130,8 @@ const ItemDetailScreen = ({ route, navigation }) => {
               <Text style={styles.serverText}>· {item.serverName} 서버</Text>
             </View>
             <Text style={styles.title}>{item.title}</Text>
-            {/* 가격: 거래의 핵심이므로 토스 스타일로 가장 크게 강조 */}
-            <Text style={styles.price}>{formatPrice(item.price)}</Text>
+            {/* 판매 수량: 거래의 핵심이므로 토스 스타일로 가장 크게 강조 */}
+            <Text style={styles.price}>{formatQuantity(item.quantity)}</Text>
             <Text style={styles.date}>{formatRelativeDate(item.createdAt)}</Text>
           </View>
 
@@ -165,7 +178,7 @@ const ItemDetailScreen = ({ route, navigation }) => {
 
       {/* 하단 고정 CTA - 채팅하기 버튼 */}
       <View style={styles.footer}>
-        <Text style={styles.footerPrice}>{formatPrice(item.price)}</Text>
+        <Text style={styles.footerPrice}>{formatQuantity(item.quantity)}</Text>
         <Button
           title="채팅으로 거래하기"
           onPress={handleChatPress}

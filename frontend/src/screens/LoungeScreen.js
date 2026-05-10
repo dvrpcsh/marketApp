@@ -13,21 +13,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import PostCard from '../components/community/PostCard';
 import { fetchPosts } from '../api/communityApi';
+import { useAuth } from '../hooks/useAuth';
 import { colors, spacing, typography, borderRadius } from '../constants/theme';
 
-// 카테고리 탭 정의
-// useFocusEffect + RefreshControl 조합으로 탭 재진입 시 항상 최신 데이터 유지
-// react-query/SWR 도입 시: staleTime 설정으로 자동 갱신 가능 (현재는 명시적 새로고침 방식)
 const TABS = [
-  { key: 'all',     label: '전체',    category: null,          sort: 'latest' },
-  { key: 'price',   label: '시세',    category: 'PRICE_INFO',  sort: 'latest' },
-  { key: 'lfg',     label: 'LFG',    category: 'LFG',         sort: 'latest' },
-  { key: 'free',    label: '자유',    category: 'FREE',        sort: 'latest' },
-  { key: 'popular', label: '🔥 인기', category: null,          sort: 'popular' },
+  { key: 'all',     label: '전체',    category: null,         sort: 'latest' },
+  { key: 'price',   label: '시세',    category: 'PRICE_INFO', sort: 'latest' },
+  { key: 'lfg',     label: 'LFG',     category: 'LFG',        sort: 'latest' },
+  { key: 'free',    label: '자유',    category: 'FREE',       sort: 'latest' },
+  { key: 'popular', label: '🔥 인기', category: null,         sort: 'popular' },
 ];
-
-// JWT 도입 후 토큰에서 자동 추출 예정
-const TEMP_USER_ID = 1;
 
 // 라운지 게시판 메인 화면
 // - 탭 필터: 전체/시세/LFG/자유/🔥인기
@@ -38,6 +33,9 @@ const LoungeScreen = ({ navigation }) => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // 글쓰기 버튼 클릭 시 로그인 여부 확인
+  const { requireAuth } = useAuth(navigation);
 
   const currentTab = TABS.find(t => t.key === activeTab);
 
@@ -69,10 +67,19 @@ const LoungeScreen = ({ navigation }) => {
     setPosts([]);
   }, []);
 
+  // FAB 클릭 → 로그인 체크 → 통과 시 글쓰기 화면으로 이동
+  // 비로그인 유저도 목록 읽기는 자유롭게 허용하고, 작성 시점에만 로그인을 요구한다
+  const handleWritePress = useCallback(() => {
+    requireAuth(
+      () => navigation.navigate('WritePost'),
+      '라운지에서 소통하시려면 로그인이 필요합니다.',
+    );
+  }, [requireAuth, navigation]);
+
   const renderPost = useCallback(({ item }) => (
     <PostCard
       post={item}
-      onPress={() => navigation.navigate('PostDetail', { postId: item.postId, userId: TEMP_USER_ID })}
+      onPress={() => navigation.navigate('PostDetail', { postId: item.postId })}
     />
   ), [navigation]);
 
@@ -136,10 +143,10 @@ const LoungeScreen = ({ navigation }) => {
         />
       )}
 
-      {/* FAB - 글쓰기 버튼 (절대 위치 오른쪽 하단) */}
+      {/* FAB - 로그인 체크 후 글쓰기 진입 */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => navigation.navigate('WritePost')}
+        onPress={handleWritePress}
         activeOpacity={0.85}
         accessibilityRole="button"
         accessibilityLabel="글쓰기"

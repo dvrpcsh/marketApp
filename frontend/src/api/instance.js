@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { tokenStorage } from '../utils/tokenStorage';
+import { navigationRef } from '../utils/navigationRef';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8080';
 
@@ -84,9 +85,13 @@ instance.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${newAccess}`;
         return instance(originalRequest);
       } catch {
-        // Refresh 실패 = 세션 완전 만료 → 저장된 인증 정보 삭제
+        // Refresh 실패 = 세션 완전 만료 → 인증 정보 삭제 후 로그인 화면으로 이동
+        // navigationRef를 통해 컴포넌트 외부에서 전역 네비게이션 실행
         await tokenStorage.clearAll();
         notifyRefreshComplete(null);
+        if (navigationRef.isReady()) {
+          navigationRef.navigate('Login');
+        }
         return Promise.reject(new Error('세션이 만료되었습니다. 다시 로그인해주세요.'));
       } finally {
         isRefreshing = false;

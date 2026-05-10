@@ -13,15 +13,18 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import ItemCard from '../components/market/ItemCard';
 import { fetchItems } from '../api/itemApi';
+import { useAuth } from '../hooks/useAuth';
 import { colors, spacing, typography, borderRadius } from '../constants/theme';
 
 // 앱의 메인 화면 - 판매중인 매물 목록을 최신순으로 표시
-// 비회원도 접근 가능한 공개 화면이므로 인증 체크 없이 바로 데이터 로드
+// 비회원도 탐색은 가능하되, 매물 등록 시점에만 로그인을 요구한다
 const HomeScreen = ({ navigation }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+
+  const { requireAuth } = useAuth(navigation);
 
   // 매물 목록 로드 - 진입 시와 당겨서 새로고침 시 모두 이 함수 재사용
   const loadItems = useCallback(async (isRefresh = false) => {
@@ -97,7 +100,10 @@ const HomeScreen = ({ navigation }) => {
             <Text style={styles.emptyText}>등록된 매물이 없습니다.</Text>
             <TouchableOpacity
               style={styles.writeButton}
-              onPress={() => navigation.navigate('WriteItem')}
+              onPress={() => requireAuth(
+                () => navigation.navigate('WriteItem'),
+                '마켓 서비스를 이용하시려면 로그인이 필요합니다.',
+              )}
               activeOpacity={0.7}
             >
               <Ionicons name="add-circle-outline" size={20} color={colors.surface} />

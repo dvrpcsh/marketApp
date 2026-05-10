@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchPost, toggleLike, createComment, deleteComment } from '../api/communityApi';
+import { tokenStorage } from '../utils/tokenStorage';
 import { formatRelativeDate } from '../utils/formatDate';
 import { colors, spacing, typography, borderRadius } from '../constants/theme';
 
@@ -23,17 +24,25 @@ const getScoreColor = (score) => (score >= 36.5 ? colors.success : colors.warnin
 // ListHeaderComponent로 게시글 본문을 FlatList 헤더에 배치
 // → 댓글과 게시글이 하나의 스크롤 컨테이너에서 자연스럽게 이어짐
 const PostDetailScreen = ({ route, navigation }) => {
-  const { postId, userId } = route.params;
+  const { postId } = route.params;
 
+  // userId는 route.params 대신 tokenStorage에서 직접 조회
+  // → 라운지 화면이 하드코딩된 TEMP_USER_ID를 전달하던 의존성 제거
+  const [currentUserId, setCurrentUserId] = useState(null);
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [commentInput, setCommentInput] = useState('');
+
+  // 화면 진입 시 로그인된 userId 로드 (비로그인이면 null)
+  useEffect(() => {
+    tokenStorage.getUserId().then(setCurrentUserId);
+  }, []);
   const [commentLoading, setCommentLoading] = useState(false);
   const inputRef = useRef(null);
 
   const loadPost = useCallback(async () => {
     try {
-      const data = await fetchPost(postId, userId);
+      const data = await fetchPost(postId);
       setPost(data);
       navigation.setOptions({ title: data.title.length > 20 ? data.title.slice(0, 20) + '…' : data.title });
     } catch (e) {
@@ -41,9 +50,9 @@ const PostDetailScreen = ({ route, navigation }) => {
     } finally {
       setLoading(false);
     }
-  }, [postId, userId]);
+  }, [postId]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     loadPost();
   }, [loadPost]);
 
@@ -52,29 +61,40 @@ const PostDetailScreen = ({ route, navigation }) => {
     if (!post) return;
     const prevLiked = post.isLiked;
     const prevCount = post.likeCount;
-
-    // 낙관적 업데이트: 즉시 UI 반영
     setPost(p => ({ ...p, isLiked: !p.isLiked, likeCount: p.isLiked ? p.likeCount - 1 : p.likeCount + 1 }));
-
     try {
-      const result = await toggleLike(postId, userId);
-      // 서버 응답으로 정확한 값 동기화
+      const result = await toggleLike(postId);
       setPost(p => ({ ...p, isLiked: result.liked, likeCount: result.likeCount }));
     } catch (e) {
-      // 실패 시 롤백
       setPost(p => ({ ...p, isLiked: prevLiked, likeCount: prevCount }));
       Alert.alert('오류', '좋아요 처리에 실패했습니다.');
     }
-  }, [post, postId, userId]);
+  }, [post, postId]);
+
+  // 댓글 입력창 포커스 시 로그인 여부 확인
+  // 비로그인 유저가 댓글란을 탭하면 키보드가 올라오기 전에 로그인 안내를 표시한다
+  const handleCommentFocus = useCallback(async () => {
+    const token = await tokenStorage.getAccessToken();
+    if (!token) {
+      inputRef.current?.blur();
+      Alert.alert(
+        '로그인이 필요합니다',
+        '라운지에서 소통하시려면 로그인이 필요합니다.',
+        [
+          { text: '취소', style: 'cancel' },
+          { text: '로그인하기', onPress: () => navigation.navigate('Login') },
+        ],
+      );
+    }
+  }, [navigation]);
 
   // 댓글 작성
   const handleCommentSubmit = useCallback(async () => {
     const text = commentInput.trim();
     if (!text) return;
-
     setCommentLoading(true);
     try {
-      const newComment = await createComment(postId, userId, text);
+      const newComment = await createComment(postId, text);
       setPost(p => ({
         ...p,
         comments: [...(p.comments || []), newComment],
@@ -87,11 +107,11 @@ const PostDetailScreen = ({ route, navigation }) => {
     } finally {
       setCommentLoading(false);
     }
-  }, [commentInput, postId, userId]);
+  }, [commentInput, postId]);
 
-  // 댓글 삭제 (작성자 본인만)
+  // 댓글 삭제 - comment.authorId와 로그인한 currentUserId를 비교하여 본인 댓글만 삭제 허용
   const handleDeleteComment = useCallback((commentId, authorId) => {
-    if (authorId !== userId) return;
+    if (authorId !== currentUserId) return;
     Alert.alert('댓글 삭제', '이 댓글을 삭제하시겠습니까?', [
       { text: '취소', style: 'cancel' },
       {
@@ -99,7 +119,7 @@ const PostDetailScreen = ({ route, navigation }) => {
         style: 'destructive',
         onPress: async () => {
           try {
-            await deleteComment(postId, commentId, userId);
+            await deleteComment(postId, commentId);
             setPost(p => ({
               ...p,
               comments: p.comments.filter(c => c.commentId !== commentId),
@@ -111,7 +131,7 @@ const PostDetailScreen = ({ route, navigation }) => {
         },
       },
     ]);
-  }, [postId, userId]);
+  }, [postId, currentUserId]);
 
   const renderComment = useCallback(({ item: comment }) => (
     <View style={styles.commentItem}>
@@ -127,7 +147,7 @@ const PostDetailScreen = ({ route, navigation }) => {
         </View>
         <View style={styles.commentMeta}>
           <Text style={styles.commentDate}>{formatRelativeDate(comment.createdAt)}</Text>
-          {comment.authorId === userId && (
+          {comment.authorId === currentUserId && (
             <TouchableOpacity onPress={() => handleDeleteComment(comment.commentId, comment.authorId)}>
               <Text style={styles.deleteBtn}>삭제</Text>
             </TouchableOpacity>
@@ -136,7 +156,7 @@ const PostDetailScreen = ({ route, navigation }) => {
       </View>
       <Text style={styles.commentContent}>{comment.content}</Text>
     </View>
-  ), [userId, handleDeleteComment]);
+  ), [currentUserId, handleDeleteComment]);
 
   // 게시글 본문 - FlatList의 ListHeaderComponent로 배치
   const renderHeader = useCallback(() => {
@@ -225,6 +245,7 @@ const PostDetailScreen = ({ route, navigation }) => {
             style={styles.commentTextInput}
             value={commentInput}
             onChangeText={setCommentInput}
+            onFocus={handleCommentFocus}
             placeholder="댓글을 입력하세요..."
             placeholderTextColor={colors.textDisabled}
             multiline={false}
