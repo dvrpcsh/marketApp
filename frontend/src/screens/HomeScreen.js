@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   FlatList,
@@ -9,6 +9,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import ItemCard from '../components/market/ItemCard';
 import { fetchItems } from '../api/itemApi';
@@ -39,9 +40,12 @@ const HomeScreen = ({ navigation }) => {
     }
   }, []);
 
-  useEffect(() => {
-    loadItems();
-  }, [loadItems]);
+  // 화면 포커스 시마다 목록 갱신 - 매물 등록·수정 후 뒤로 돌아왔을 때 자동 반영
+  useFocusEffect(
+    useCallback(() => {
+      loadItems();
+    }, [loadItems])
+  );
 
   // renderItem을 useCallback으로 메모이제이션 - FlatList 스크롤 시 함수 재생성 방지
   const renderItem = useCallback(({ item }) => (

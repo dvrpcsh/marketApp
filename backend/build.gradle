@@ -10,6 +10,11 @@ java {
 	}
 }
 
+// 소스 컴파일 인코딩을 UTF-8로 강제 - Windows 기본 CP949 환경에서 한글 소스 파일 보호
+tasks.withType(JavaCompile).configureEach {
+	options.encoding = 'UTF-8'
+}
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -38,6 +43,15 @@ tasks.named('test') {
 
 // .env 파일을 읽어 bootRun 환경 변수로 자동 주입
 tasks.named('bootRun') {
+	// Windows CP949 환경에서 한글 로그가 깨지는 문제 해결
+	// -Dfile.encoding: JVM 전체 기본 인코딩
+	// -Dstdout.encoding / -Dstderr.encoding: Java 17.0.2+에서 stdout/stderr 스트림 인코딩 별도 지정
+	jvmArgs = [
+		'-Dfile.encoding=UTF-8',
+		'-Dstdout.encoding=UTF-8',
+		'-Dstderr.encoding=UTF-8'
+	]
+
 	def envFile = file('.env')
 	if (envFile.exists()) {
 		envFile.readLines().each { line ->
