@@ -37,7 +37,14 @@ const LoginScreen = ({ navigation, route }) => {
     setLoading(true);
     try {
       await login(form.username, form.password);
-      navigation.goBack();
+      // canGoBack()으로 안전하게 확인 후 이동
+      // - 다른 화면에서 navigate('Login')으로 진입한 경우: 모달을 닫고 이전 화면으로 복귀
+      // - 직접 접근 등 뒤로 갈 화면이 없는 경우: 앱 루트로 리셋
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+      }
     } catch (e) {
       const message = e.message?.includes('아이디') || e.message?.includes('비밀번호')
         ? e.message
