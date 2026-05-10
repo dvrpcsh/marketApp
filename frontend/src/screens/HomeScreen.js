@@ -26,6 +26,14 @@ const HomeScreen = ({ navigation }) => {
 
   const { requireAuth } = useAuth(navigation);
 
+  // 매물 등록 진입 - 로그인 체크 후 WriteItem으로 이동
+  const handleWriteItem = useCallback(() => {
+    requireAuth(
+      () => navigation.navigate('WriteItem'),
+      '마켓 서비스를 이용하시려면 로그인이 필요합니다.',
+    );
+  }, [requireAuth, navigation]);
+
   // 매물 목록 로드 - 진입 시와 당겨서 새로고침 시 모두 이 함수 재사용
   const loadItems = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -76,17 +84,24 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      {/* 헤더 - 우측에 판매 등록 버튼 배치 */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>마켓</Text>
+        <TouchableOpacity
+          style={styles.headerSellBtn}
+          onPress={handleWriteItem}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="add" size={18} color={colors.primary} />
+          <Text style={styles.headerSellText}>판매하기</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList
         data={items}
-        // 각 아이템의 고유 id를 키로 사용 - React가 리스트 변경을 효율적으로 추적
         keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
-        // 당겨서 새로고침 - 실시간 매물 변동을 빠르게 반영
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -100,10 +115,7 @@ const HomeScreen = ({ navigation }) => {
             <Text style={styles.emptyText}>등록된 매물이 없습니다.</Text>
             <TouchableOpacity
               style={styles.writeButton}
-              onPress={() => requireAuth(
-                () => navigation.navigate('WriteItem'),
-                '마켓 서비스를 이용하시려면 로그인이 필요합니다.',
-              )}
+              onPress={handleWriteItem}
               activeOpacity={0.7}
             >
               <Ionicons name="add-circle-outline" size={20} color={colors.surface} />
@@ -112,6 +124,17 @@ const HomeScreen = ({ navigation }) => {
           </View>
         }
       />
+
+      {/* FAB - 스크롤 위치와 무관하게 항상 접근 가능한 매물 등록 진입점 */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={handleWriteItem}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel="매물 등록"
+      >
+        <Ionicons name="add" size={28} color={colors.surface} />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -122,6 +145,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     backgroundColor: colors.surface,
@@ -132,9 +158,24 @@ const styles = StyleSheet.create({
     ...typography.screenTitle,
     color: colors.textPrimary,
   },
+  headerSellBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    borderRadius: borderRadius.md,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+  },
+  headerSellText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primary,
+  },
   list: {
     paddingTop: spacing.md,
-    paddingBottom: 80, // 하단 탭바에 가려지지 않도록 여유 공간 확보
+    paddingBottom: 100, // FAB + 탭바 높이 확보
   },
   center: {
     flex: 1,
@@ -166,6 +207,25 @@ const styles = StyleSheet.create({
   writeButtonText: {
     ...typography.button,
     color: colors.surface,
+  },
+
+  // FAB - 라운지의 글쓰기 FAB와 동일 패턴으로 일관된 UX 제공
+  // 목록 스크롤 중에도 항상 노출되어 매물 등록 진입 장벽을 최소화
+  fab: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: spacing.xl,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
   },
 });
 
