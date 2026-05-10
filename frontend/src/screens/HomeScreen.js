@@ -84,17 +84,8 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* 헤더 - 우측에 판매 등록 버튼 배치 */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>마켓</Text>
-        <TouchableOpacity
-          style={styles.headerSellBtn}
-          onPress={handleWriteItem}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="add" size={18} color={colors.primary} />
-          <Text style={styles.headerSellText}>판매하기</Text>
-        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -131,9 +122,10 @@ const HomeScreen = ({ navigation }) => {
         onPress={handleWriteItem}
         activeOpacity={0.85}
         accessibilityRole="button"
-        accessibilityLabel="매물 등록"
+        accessibilityLabel="판매 등록"
       >
-        <Ionicons name="add" size={28} color={colors.surface} />
+        <Ionicons name="add" size={22} color={colors.surface} />
+        <Text style={styles.fabText}>판매 등록</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -145,9 +137,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     backgroundColor: colors.surface,
@@ -157,21 +146,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     ...typography.screenTitle,
     color: colors.textPrimary,
-  },
-  headerSellBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: borderRadius.md,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-  },
-  headerSellText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.primary,
   },
   list: {
     paddingTop: spacing.md,
@@ -209,23 +183,29 @@ const styles = StyleSheet.create({
     color: colors.surface,
   },
 
-  // FAB - 라운지의 글쓰기 FAB와 동일 패턴으로 일관된 UX 제공
+  // FAB - pill 형태로 아이콘 + 텍스트를 함께 표시해 기능을 명확하게 전달
   // 목록 스크롤 중에도 항상 노출되어 매물 등록 진입 장벽을 최소화
   fab: {
     position: 'absolute',
     right: spacing.lg,
     bottom: spacing.xl,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.primary,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 14,
+    borderRadius: 30,
+    backgroundColor: colors.primary,
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 6,
+  },
+  fabText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.surface,
   },
 });
 
