@@ -178,7 +178,7 @@ const ItemCard = React.memo(({ item, onPress }) => {
           <AuthBadge
             iconName="id-card-outline"
             active={item.sellerIdentityVerified}
-            label="ID"
+            label="본인인증"
           />
           <AuthBadge
             iconName="phone-portrait-outline"
