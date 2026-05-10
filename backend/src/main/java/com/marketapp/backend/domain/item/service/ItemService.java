@@ -33,15 +33,21 @@ public class ItemService {
 
     @Transactional
     public ItemResponseDto createItem(Long sellerId, CreateItemRequestDto requestDto) {
+        if (requestDto.getQuantity() % 10000 != 0) {
+            throw new BusinessException(ErrorCode.INVALID_GOLD_UNIT);
+        }
+
         User seller = userRepository.findById(sellerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         Item item = Item.builder()
                 .seller(seller)
-                .title(requestDto.getTitle())
-                .price(requestDto.getPrice())
-                .category(requestDto.getCategory())
+                .gameName(requestDto.getGameName())
                 .serverName(requestDto.getServerName())
+                .category(requestDto.getCategory())
+                .quantity(requestDto.getQuantity())
+                .characterName(requestDto.getCharacterName())
+                .title(requestDto.getTitle())
                 .description(requestDto.getDescription())
                 .build();
 

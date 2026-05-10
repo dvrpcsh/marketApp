@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import HomeScreen from '../screens/HomeScreen';
 import ItemDetailScreen from '../screens/ItemDetailScreen';
+import WriteItemScreen from '../screens/WriteItemScreen';
 import LoungeScreen from '../screens/LoungeScreen';
 import PostDetailScreen from '../screens/PostDetailScreen';
 import WritePostScreen from '../screens/WritePostScreen';
@@ -35,6 +36,18 @@ const HomeStackNavigator = () => (
       name="ItemDetail"
       component={ItemDetailScreen}
       options={{ title: '매물 상세', headerBackTitle: '목록' }}
+    />
+    <HomeStack.Screen
+      name="WriteItem"
+      component={WriteItemScreen}
+      options={{
+        title: '판매 매물 등록',
+        headerBackTitle: '취소',
+        headerTintColor: colors.textPrimary,
+        headerStyle: { backgroundColor: colors.surface },
+        headerTitleStyle: { ...typography.sectionTitle, color: colors.textPrimary },
+        presentation: 'modal',
+      }}
     />
   </HomeStack.Navigator>
 );

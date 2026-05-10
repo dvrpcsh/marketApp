@@ -8,17 +8,17 @@ import lombok.Getter;
 
 import java.time.LocalDateTime;
 
-// 매물 응답 DTO
-// 판매자 정보는 최소한의 공개 정보만 포함 - 닉네임과 신뢰 점수만 노출하여 개인정보 보호
 @Getter
 @Builder
 public class ItemResponseDto {
 
     private Long id;
-    private String title;
-    private int price;
-    private ItemCategory category;
+    private String gameName;
     private String serverName;
+    private ItemCategory category;
+    private long quantity;
+    private String characterName;
+    private String title;
     private ItemStatus status;
     private String description;
     private LocalDateTime createdAt;
@@ -31,10 +31,12 @@ public class ItemResponseDto {
     public static ItemResponseDto from(Item item) {
         return ItemResponseDto.builder()
                 .id(item.getId())
-                .title(item.getTitle())
-                .price(item.getPrice())
-                .category(item.getCategory())
+                .gameName(item.getGameName())
                 .serverName(item.getServerName())
+                .category(item.getCategory())
+                .quantity(item.getQuantity())
+                .characterName(item.getCharacterName())
+                .title(item.getTitle())
                 .status(item.getStatus())
                 .description(item.getDescription())
                 .createdAt(item.getCreatedAt())

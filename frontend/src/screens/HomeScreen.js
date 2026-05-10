@@ -3,14 +3,16 @@ import {
   View,
   FlatList,
   Text,
+  TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import ItemCard from '../components/market/ItemCard';
 import { fetchItems } from '../api/itemApi';
-import { colors, spacing, typography } from '../constants/theme';
+import { colors, spacing, typography, borderRadius } from '../constants/theme';
 
 // 앱의 메인 화면 - 판매중인 매물 목록을 최신순으로 표시
 // 비회원도 접근 가능한 공개 화면이므로 인증 체크 없이 바로 데이터 로드
@@ -87,7 +89,16 @@ const HomeScreen = ({ navigation }) => {
         }
         ListEmptyComponent={
           <View style={styles.center}>
+            <Ionicons name="storefront-outline" size={56} color={colors.textDisabled} />
             <Text style={styles.emptyText}>등록된 매물이 없습니다.</Text>
+            <TouchableOpacity
+              style={styles.writeButton}
+              onPress={() => navigation.navigate('WriteItem')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add-circle-outline" size={20} color={colors.surface} />
+              <Text style={styles.writeButtonText}>첫 매물 등록하기</Text>
+            </TouchableOpacity>
           </View>
         }
       />
@@ -130,6 +141,21 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textSecondary,
     textAlign: 'center',
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  writeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+  },
+  writeButtonText: {
+    ...typography.button,
+    color: colors.surface,
   },
 });
 

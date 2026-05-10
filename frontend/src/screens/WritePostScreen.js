@@ -21,9 +21,6 @@ const CATEGORIES = [
   { key: 'FREE',       label: '자유', color: colors.primary },
 ];
 
-// JWT 도입 후 토큰에서 자동 추출 예정
-const TEMP_AUTHOR_ID = 1;
-
 // 게시글 작성 화면
 const WritePostScreen = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -37,7 +34,7 @@ const WritePostScreen = ({ navigation }) => {
     if (!isValid) return;
     setLoading(true);
     try {
-      await createPost(TEMP_AUTHOR_ID, {
+      await createPost({
         title: title.trim(),
         content: content.trim(),
         category: selectedCategory,

@@ -36,21 +36,33 @@ public class Item extends BaseEntity {
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
 
-    @Column(nullable = false, length = 100)
-    private String title;
+    // 게임명 - 추후 다중 게임 지원 시 필터링 키로 사용
+    @Column(nullable = false, length = 50)
+    private String gameName;
 
-    // 가격 단위: 원(KRW) 기준, 추후 시세 차트와의 가격 비교 포인트
-    @Column(nullable = false)
-    private int price;
+    // 게임 서버명 - 같은 게임도 서버별 시세가 다르므로 필수 구분 항목
+    @Column(nullable = false, length = 50)
+    private String serverName;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ItemCategory category;
 
-    // 게임 서버명 - 같은 게임도 서버별 시세가 다르므로 필수 구분 항목
-    // 시세 데이터 조회 시에도 서버명으로 필터링하는 핵심 키값
+    // 판매 수량 (골드) - 최소 10,000골드, 10,000 단위
+    @Column(nullable = false)
+    private long quantity;
+
+    // 물품을 전달할 캐릭터명 - 거래 사고 방지를 위한 필수 확인 항목
     @Column(nullable = false, length = 50)
-    private String serverName;
+    private String characterName;
+
+    @Column(nullable = false, length = 100)
+    private String title;
+
+    // KRW 가격 - 추후 실물화폐 결제 기능 구현 시 사용, 현재는 0으로 유지
+    @Builder.Default
+    @Column(nullable = false)
+    private int price = 0;
 
     // 매물 상태 - 신규 등록 시 항상 판매중(FOR_SALE)으로 시작
     @Enumerated(EnumType.STRING)
