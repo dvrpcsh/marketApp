@@ -62,6 +62,8 @@ const ChatRoomScreen = ({ route, navigation }) => {
   // STOMP WebSocket 연결 및 채팅방 구독
   const connectStomp = useCallback(async () => {
     const accessToken = await tokenStorage.getAccessToken();
+    console.log('[STOMP] 연결 시작 — 토큰 존재:', !!accessToken, '/ WS URL:', `${WS_BASE_URL}/ws`);
+
     const client = new Client({
       // React Native 전역 WebSocket API 사용 - SockJS 없이 순수 WebSocket 연결
       webSocketFactory: () => new WebSocket(`${WS_BASE_URL}/ws`),
@@ -69,6 +71,7 @@ const ChatRoomScreen = ({ route, navigation }) => {
       connectHeaders: { Authorization: `Bearer ${accessToken}` },
       reconnectDelay: 5000,
       onConnect: () => {
+        console.log('[STOMP] 연결 성공');
         setConnected(true);
         // 이 채팅방 전용 구독 채널 - 일반 메시지와 시스템 메시지 모두 여기로 수신
         client.subscribe(`/topic/room/${roomId}`, (stompMessage) => {
@@ -82,12 +85,18 @@ const ChatRoomScreen = ({ route, navigation }) => {
           }
         });
       },
-      onDisconnect: () => setConnected(false),
-      onStompError: (frame) => {
-        console.error('STOMP 에러:', frame.headers['message']);
+      onDisconnect: () => {
+        console.log('[STOMP] 연결 해제');
         setConnected(false);
       },
-      onWebSocketError: () => setConnected(false),
+      onStompError: (frame) => {
+        console.error('[STOMP] STOMP 에러:', frame.headers['message']);
+        setConnected(false);
+      },
+      onWebSocketError: (error) => {
+        console.error('[STOMP] WebSocket 에러:', error?.message ?? error);
+        setConnected(false);
+      },
     });
 
     client.activate();

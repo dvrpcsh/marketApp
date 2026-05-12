@@ -36,6 +36,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
         // CONNECT 프레임에서만 인증 처리 - 연결 시 한 번만 검증
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+            log.info("[WebSocket] CONNECT 프레임 수신");
             String authHeader = accessor.getFirstNativeHeader("Authorization");
 
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
