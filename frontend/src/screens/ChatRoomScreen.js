@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Client } from '@stomp/stompjs';
 import { fetchChatMessages } from '../api/chatApi';
 import { completeTrade } from '../api/itemApi';
+import { tokenStorage } from '../utils/tokenStorage';
 import { WS_BASE_URL } from '../constants/config';
 import { colors, spacing, typography, borderRadius } from '../constants/theme';
 
@@ -28,12 +29,12 @@ import { colors, spacing, typography, borderRadius } from '../constants/theme';
 // 거래 완료 버튼은 판매자(currentUserId === sellerId)에게만 표시
 // FlatList inverted: 최신 메시지를 항상 화면 하단에 고정
 const ChatRoomScreen = ({ route, navigation }) => {
-  const { roomId, itemId, itemTitle, currentUserId, sellerId } = route.params;
-
-  // 현재 유저가 판매자인지 여부 - 거래 완료 버튼 노출 및 버튼 동작 분기에 사용
-  const isSeller = currentUserId === sellerId;
+  const { roomId, itemId, itemTitle, sellerId } = route.params;
 
   const [messages, setMessages] = useState([]);
+  // tokenStorage에서 실제 로그인 사용자 ID를 로드 - route.params 하드코딩 값 대신 사용
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const isSeller = currentUserId !== null && currentUserId === sellerId;
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
   const [connected, setConnected] = useState(false);
@@ -116,6 +117,9 @@ const ChatRoomScreen = ({ route, navigation }) => {
   }, [isSeller, tradeCompleted, completeLoading]);
 
   useEffect(() => {
+    tokenStorage.getUserId().then(uid => {
+      if (uid) setCurrentUserId(uid);
+    });
     loadHistory();
     connectStomp();
     return () => {
@@ -171,9 +175,10 @@ const ChatRoomScreen = ({ route, navigation }) => {
     const text = inputText.trim();
     if (!text || !stompClientRef.current?.connected) return;
 
+    // senderId는 서버가 JWT Principal에서 추출 - 클라이언트에서 보내지 않음
     stompClientRef.current.publish({
       destination: '/app/chat.send',
-      body: JSON.stringify({ roomId, senderId: currentUserId, message: text }),
+      body: JSON.stringify({ roomId, message: text }),
     });
     setInputText('');
   }, [inputText, roomId, currentUserId]);

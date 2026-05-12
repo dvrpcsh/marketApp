@@ -48,11 +48,11 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatMessageResponseDto saveMessage(ChatMessageRequestDto requestDto) {
+    public ChatMessageResponseDto saveMessage(ChatMessageRequestDto requestDto, Long senderId) {
         ChatRoom room = chatRoomRepository.findById(requestDto.getRoomId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
-        ChatMessage message = ChatMessage.create(room, requestDto.getSenderId(), requestDto.getMessage());
+        ChatMessage message = ChatMessage.create(room, senderId, requestDto.getMessage());
         return ChatMessageResponseDto.from(chatMessageRepository.save(message));
     }
 

@@ -15,13 +15,11 @@ public class ChatMessageRequestDto {
     @NotNull(message = "roomId는 필수입니다.")
     private Long roomId;
 
-    // JWT 도입 후 토큰에서 자동 추출 예정 - 현재는 클라이언트에서 전달
-    @NotNull(message = "senderId는 필수입니다.")
-    private Long senderId;
+    // senderId는 STOMP CONNECT 시 설정된 JWT Principal에서 서버가 직접 추출
+    // 클라이언트 전달값을 신뢰하면 사칭이 가능하므로 DTO에서 제거
 
     @NotBlank(message = "메시지 내용은 비어있을 수 없습니다.")
     private String message;
 
-    // 메시지 타입 - 클라이언트에서 명시하지 않으면 NORMAL로 처리
     private ChatMessageType type = ChatMessageType.NORMAL;
 }

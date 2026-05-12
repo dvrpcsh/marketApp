@@ -10,10 +10,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
+
 
 // REST API: 채팅방 생성/조회, 메시지 히스토리 조회
 // STOMP: 실시간 메시지 수신 및 브로드캐스트
@@ -51,10 +54,13 @@ public class ChatController {
     }
 
     // [STOMP] 실시간 메시지 수신 및 브로드캐스트
-    // StompAuthChannelInterceptor에서 CONNECT 시 JWT 검증이 완료된 상태로만 도달
+    // StompAuthChannelInterceptor가 CONNECT 시 설정한 Principal에서 senderId 추출
+    // 클라이언트 전달값을 사용하지 않으므로 발신자 사칭 불가
     @MessageMapping("/chat.send")
-    public void sendMessage(@Payload @Valid ChatMessageRequestDto requestDto) {
-        ChatMessageResponseDto savedMessage = chatService.saveMessage(requestDto);
+    public void sendMessage(@Payload @Valid ChatMessageRequestDto requestDto, Principal principal) {
+        UserPrincipal userPrincipal =
+                (UserPrincipal) ((UsernamePasswordAuthenticationToken) principal).getPrincipal();
+        ChatMessageResponseDto savedMessage = chatService.saveMessage(requestDto, userPrincipal.getId());
         messagingTemplate.convertAndSend(
                 "/topic/room/" + requestDto.getRoomId(),
                 savedMessage

@@ -98,7 +98,16 @@ instance.interceptors.response.use(
       }
     }
 
-    // 그 외 에러: 서버 메시지 있으면 그대로, 없으면 기본 안내
+    // 그 외 에러: 상태 코드·URL·응답 본문을 로그로 남겨 원인 특정
+    const status = error.response?.status;
+    const url = error.config?.url;
+    if (!error.response) {
+      console.error(`[API] 네트워크 오류 - 서버에 연결할 수 없음 (baseURL: ${BASE_URL})`);
+      console.error('[API] 체크리스트: 서버 실행 여부 / IP 주소 / 방화벽 / 에뮬레이터는 10.0.2.2');
+    } else {
+      console.error(`[API] HTTP ${status} 에러 — ${url}`);
+      console.error('[API] 응답 본문:', JSON.stringify(error.response.data));
+    }
     const serverMessage = error.response?.data?.message;
     return Promise.reject(
       new Error(serverMessage || '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.'),
