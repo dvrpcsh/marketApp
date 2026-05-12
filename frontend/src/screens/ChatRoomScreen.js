@@ -99,6 +99,14 @@ const ChatRoomScreen = ({ route, navigation }) => {
       },
     });
 
+    // 재연결 시마다(reconnectDelay) 최신 토큰으로 갱신
+    // 최초 연결 이후 토큰이 갱신되어도 STOMP가 올바른 토큰을 사용하도록 보장
+    client.beforeConnect = async () => {
+      const freshToken = await tokenStorage.getAccessToken();
+      client.connectHeaders = { Authorization: `Bearer ${freshToken}` };
+      console.log('[STOMP] beforeConnect — 토큰 갱신');
+    };
+
     client.activate();
     stompClientRef.current = client;
   }, [roomId]);

@@ -1,14 +1,18 @@
 package com.marketapp.backend.global.config;
 
 import com.marketapp.backend.global.security.jwt.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -62,7 +66,19 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 // JWT 필터를 Spring Security 기본 인증 필터 앞에 삽입
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                // JWT 만료 시 AnonymousAuthenticationToken으로 폴백 → AccessDeniedException(403) 발생
+                // 익명(= 실질적 미인증) 상태에서 거부된 경우는 401로 변환하여 프론트 refresh 인터셉터가 동작하게 함
+                .exceptionHandling(ex -> ex
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                            if (auth == null || auth instanceof AnonymousAuthenticationToken) {
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+                            } else {
+                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden");
+                            }
+                        })
+                );
 
         return http.build();
     }
