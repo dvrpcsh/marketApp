@@ -60,10 +60,13 @@ const ChatRoomScreen = ({ route, navigation }) => {
   }, [roomId]);
 
   // STOMP WebSocket 연결 및 채팅방 구독
-  const connectStomp = useCallback(() => {
+  const connectStomp = useCallback(async () => {
+    const accessToken = await tokenStorage.getAccessToken();
     const client = new Client({
       // React Native 전역 WebSocket API 사용 - SockJS 없이 순수 WebSocket 연결
       webSocketFactory: () => new WebSocket(`${WS_BASE_URL}/ws`),
+      // StompAuthChannelInterceptor가 CONNECT 프레임의 이 헤더로 JWT 검증
+      connectHeaders: { Authorization: `Bearer ${accessToken}` },
       reconnectDelay: 5000,
       onConnect: () => {
         setConnected(true);
