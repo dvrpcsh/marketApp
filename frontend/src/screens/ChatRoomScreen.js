@@ -64,12 +64,20 @@ const ChatRoomScreen = ({ route, navigation }) => {
     const accessToken = await tokenStorage.getAccessToken();
     console.log('[STOMP] 연결 시작 — 토큰 존재:', !!accessToken, '/ WS URL:', `${WS_BASE_URL}/ws`);
 
+    // Raw WebSocket 연결 테스트 — STOMP 없이 TCP 연결 자체가 되는지 확인
+    const testWs = new WebSocket(`${WS_BASE_URL}/ws`);
+    testWs.onopen  = () => { console.log('[WS Raw] 연결 성공'); testWs.close(); };
+    testWs.onerror = (e) => console.error('[WS Raw] 에러:', JSON.stringify(e));
+    testWs.onclose = (e) => console.log('[WS Raw] 닫힘 — code:', e.code, '/ reason:', e.reason);
+
     const client = new Client({
       // React Native 전역 WebSocket API 사용 - SockJS 없이 순수 WebSocket 연결
       webSocketFactory: () => new WebSocket(`${WS_BASE_URL}/ws`),
       // StompAuthChannelInterceptor가 CONNECT 프레임의 이 헤더로 JWT 검증
       connectHeaders: { Authorization: `Bearer ${accessToken}` },
       reconnectDelay: 5000,
+      // STOMP 라이브러리 내부 흐름 추적
+      debug: (str) => console.log('[STOMP Debug]', str),
       onConnect: () => {
         console.log('[STOMP] 연결 성공');
         setConnected(true);
