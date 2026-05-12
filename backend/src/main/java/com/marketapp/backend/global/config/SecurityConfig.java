@@ -6,13 +6,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -67,17 +64,17 @@ public class SecurityConfig {
                 )
                 // JWT 필터를 Spring Security 기본 인증 필터 앞에 삽입
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                // JWT 만료 시 AnonymousAuthenticationToken으로 폴백 → AccessDeniedException(403) 발생
-                // 익명(= 실질적 미인증) 상태에서 거부된 경우는 401로 변환하여 프론트 refresh 인터셉터가 동작하게 함
+                // [익명 사용자 → 401 반환]
+                // JWT 만료/미인증 → AnonymousAuthenticationFilter 개입 → ExceptionTranslationFilter가
+                // AccessDeniedHandler(우리가 설정한 것) 대신 AuthenticationEntryPoint를 호출
+                // → authenticationEntryPoint 미설정 시 Spring 기본값 Http403ForbiddenEntryPoint(403) 반환
+                // → 프론트 refresh 인터셉터(401 감지)가 동작하지 않는 문제 발생
+                // authenticationEntryPoint를 명시적으로 설정하여 401 반환, refresh 로직이 작동하게 함
                 .exceptionHandling(ex -> ex
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-                            if (auth == null || auth instanceof AnonymousAuthenticationToken) {
-                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
-                            } else {
-                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden");
-                            }
-                        })
+                        .authenticationEntryPoint((request, response, authException) ->
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden"))
                 );
 
         return http.build();
